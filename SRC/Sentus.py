@@ -150,6 +150,7 @@ for Jd in range(Conf["INI_DATE_JD"], Conf["END_DATE_JD"] + 1):
 
                 "CycleSlipBuffIdx": 0,                                         # Index of CS buffer
                 "CycleSlipFlagIdx": 0,                                         # Index of CS flag array
+                # CYCLE_SLIPS  1  0.5  3  7  2
                 "GF_L_Prev": [0.0] * int(Conf["CYCLE_SLIPS"][CSNPOINTS]),      # Array with previous GF carrier phase observables
                 "GF_Epoch_Prev": [0.0] * int(Conf["CYCLE_SLIPS"][CSNPOINTS]),  # Array with previous epochs
                 "CycleSlipFlags": [0.0] * int(Conf["CYCLE_SLIPS"][CSNEPOCHS]), # Array with last cycle slips flags
