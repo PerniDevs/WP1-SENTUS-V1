@@ -1,20 +1,32 @@
 def rejectMeasurement(PreproObs, Criterion):
     PreproObs["Valid"] = 1
-    if Criterion == "MASK_ANGLE":
+    if Criterion == "RCVR_MASK":
         PreproObs["RejectionCause"] = 1
-        return PreproObs 
-    if Criterion == "MAX_DATA_GAP":
+    elif Criterion == "MAX_DATA_GAP":
         PreproObs["RejectionCause"] = 2
-        return PreproObs 
     elif Criterion == "MIN_SNR_F1":
         PreproObs["RejectionCause"] = 3
-        return PreproObs 
     elif Criterion == "MIN_SNR_F2":
         PreproObs["RejectionCause"] = 4
-        return PreproObs 
     elif Criterion == "MIN_SNR_F2":
         PreproObs["RejectionCause"] = 5
-        return PreproObs 
     elif Criterion == "MIN_SNR_F2":
         PreproObs["RejectionCause"] = 6
-        return PreproObs 
+    elif Criterion == "MAX_PHASE_RATE_F1":
+        PreproObs["RejectionCause"] = 7
+    elif Criterion == "MAX_PHASE_RATE_F2":
+        PreproObs["RejectionCause"] = 8
+    elif Criterion == "MAX_PHASE_RATE_STEP_F1":
+        PreproObs["RejectionCause"] = 9
+    elif Criterion == "MAX_PHASE_RATE_STEP_F2":
+        PreproObs["RejectionCause"] = 10
+    elif Criterion == "MAX_RANGE_RATE_F1":
+        PreproObs["RejectionCause"] = 11
+    elif Criterion == "MAX_RANGE_RATE_F2":
+        PreproObs["RejectionCause"] = 12
+    elif Criterion == "MAX_RANGE_RATE_STEP_F1":
+        PreproObs["RejectionCause"] = 13
+    elif Criterion == "MAX_RANGE_RATE_STEP_F2":
+        PreproObs["RejectionCause"] = 14
+
+    return PreproObs

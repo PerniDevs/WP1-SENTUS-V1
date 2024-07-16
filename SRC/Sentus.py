@@ -182,6 +182,7 @@ for Jd in range(Conf["INI_DATE_JD"], Conf["END_DATE_JD"] + 1):
                 if Conf["PREPRO_OUT"] == 1:
                     # Generate output file
                     generatePreproFile(fpreprobs, PreproObsInfo)
+                # break
 
     # If PREPRO outputs are requested
     if Conf["PREPRO_OUT"] == 1:

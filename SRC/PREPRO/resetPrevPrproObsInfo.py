@@ -1,9 +1,9 @@
 from COMMON import GnssConstants as Const
 from InputOutput import CSNEPOCHS, CSNPOINTS
 
-def resetPrevPreproObsInfo(Conf):
+def resetPrevPreproObsInfo(Conf, PreproObs):
     return {
-                "PrevEpoch": 86400,                                          # Previous SoD
+                "PrevEpoch": PreproObs["Sod"],                               # Previous SoD
 
                 "ResetHatchFilter": 1,                                       # Flag to reset Hatch filter
                 "Ksmooth": 0,                                                # Hatch filter K

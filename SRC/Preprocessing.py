@@ -33,6 +33,8 @@ import numpy as np
 from PREPRO.resetPrevPrproObsInfo import resetPrevPreproObsInfo
 from PREPRO.rejectMeasurement import rejectMeasurement
 from PREPRO.buildIonoFree import buildIonoFree
+from PREPRO.computePhaseRate import computePhaseRate, computePhaseRateStep
+from PREPRO.computeCodeRate import computeCodeRate, computeCodeRateStep
 
 
 # Preprocessing internal functions
@@ -211,25 +213,24 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
         # Get S2
         SatPreproObsInfo["S2"] = float(SatCodesObs[ObsIdxC["S2"]])
         # Get L1
-        SatPreproObsInfo["L1"] = float(SatPhaseObs[ObsIdxP["L1"]])
+        SatPreproObsInfo["L1"] = float(SatPhaseObs[ObsIdxP["L1"]]) 
         # Get L2
-        SatPreproObsInfo["L2"] = float(SatCodesObs[ObsIdxP["L2"]])
+        SatPreproObsInfo["L2"] = float(SatPhaseObs[ObsIdxP["L2"]])
         # Get L1-meters
-        SatPreproObsInfo["L1Meters"] = float(SatCodesObs[ObsIdxP["L1"]]) * Wave["F1"]
+        SatPreproObsInfo["L1Meters"] = SatPreproObsInfo["L1"] * Wave["F1"]
         # Get L2-meters
-        SatPreproObsInfo["L2Meters"] = float(SatCodesObs[ObsIdxP["L2"]]) * Wave["F2"]
+        SatPreproObsInfo["L2Meters"] = SatPreproObsInfo["L2"] * Wave["F2"]
         # Get Valid
         SatPreproObsInfo["Valid"] = 0
 
         # Prepare output for the satellite
         PreproObsInfo[SatLabel] = SatPreproObsInfo
-
+    
     # Loop over satellites
     for SatLabel, PreproObs in PreproObsInfo.items():
 
         # Get constellation
         Constel = SatLabel[0]
-        
         Wave = {}
         # Get wavelengths
         if Constel == 'G':
@@ -258,50 +259,26 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
 
         # Check measurements data gaps
         #--------------------------------------------------------------------
-        DeltaT = PreproObs["Sod"] - PrevPreproObsInfo[SatLabel]["PrevEpoch"]
-        if DeltaT > Conf["MAX_DATA_GAP"][1]:
-            DeltaT = 0
+        if PreproObs["Sod"] - PrevPreproObsInfo[SatLabel]["PrevEpoch"] > Conf["MAX_DATA_GAP"][1]:
             if Conf["MAX_DATA_GAP"][0] == 1:
                 PreproObs = rejectMeasurement(PreproObs, "MAX_DATA_GAP")
-                # Update the dictionaries
-                PreproObsInfo[SatLabel] = PreproObs
-            PrevPreproObsInfo[SatLabel] = resetPrevPreproObsInfo(Conf)
-        else:
-            # Update the PrevPreproObsInfo with the current data
-            # Get Sod
-            PrevPreproObsInfo[SatLabel]["PrevEpoch"] = PreproObs["Sod"]
-            # Get L1
-            PrevPreproObsInfo[SatLabel]["PrevL1"] = PreproObs["L1"]
-            # Get L2
-            PrevPreproObsInfo[SatLabel]["PrevL2"] = PreproObs["L2"]
-            # Get C1
-            PrevPreproObsInfo[SatLabel]["PrevC1"] = PreproObs["C1"]
-            # Get C2
-            PrevPreproObsInfo[SatLabel]["PrevC2"] = PreproObs["C2"]
-
+            PrevPreproObsInfo[SatLabel] = resetPrevPreproObsInfo(Conf, PreproObs)
 
         # Check Satellite Elevation Angle in front of the minimum by configuration
         #--------------------------------------------------------------------
-        if PreproObs["Elevation"] > Conf["MASK_ANGLE"]:
-            PreproObs = rejectMeasurement(PreproObs, "MASK_ANGLE")
-            # Update the dictionaries
-            PreproObsInfo[SatLabel] = PreproObs
-        #End if PreproObs["Elevation"] > Conf["MASK_ANGLE"]
-
+        if PreproObs["Elevation"] < Conf["RCVR_MASK"]:
+            PreproObs = rejectMeasurement(PreproObs, "RCVR_MASK")
+        #End if PreproObs["Elevation"] > Conf["RCVR_MASK"]
 
         # Measurement quality monitoring
         #--------------------------------------------------------------------
         # Check signal to noise ratio in front of minimum by configuration (if activated)
         #--------------------------------------------------------------------
-        if Const["MIN_SNR"][0] == 1:
+        if Conf["MIN_SNR"][0] == 1:
             if PreproObs["S1"] < Conf["MIN_SNR"][1]:
                 PreproObs = rejectMeasurement(PreproObs, "MIN_SNR_F1")
-                # Update the dictionaries
-                PreproObsInfo[SatLabel] = PreproObs
             elif PreproObs["S2"] < Conf["MIN_SNR"][1]:
                 PreproObs = rejectMeasurement(PreproObs, "MIN_SNR_F2")
-                # Update the dictionaries
-                PreproObsInfo[SatLabel] = PreproObs
             # End if PreproObs["S1"] > Conf["MIN_SNR"][1] || PreproObs["S2"] > Conf["MIN_SNR"][1]
         # End if Const["MIN_SNR"][0] == 1:
 
@@ -311,12 +288,8 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
         if Conf["MAX_PSR_OUTRNG"][0] == 1:
             if PreproObs["C1"] > Conf["MAX_PSR_OUTRNG"][1]:
                 PreproObs = rejectMeasurement(PreproObs, "MAX_PSR_OUTRNG_F1")
-                # Update the dictionaries
-                PreproObsInfo[SatLabel] = PreproObs
             elif PreproObs["C2"] > Conf["MAX_PSR_OUTRNG"][1]:
                 PreproObs = rejectMeasurement(PreproObs, "MAX_PSR_OUTRNG_F2")
-                # Update the dictionaries
-                PreproObsInfo[SatLabel] = PreproObs
             # End if PreproObs["C1"] > Conf["MAX_PSR_OUTRNG"][1] || PreproObs["C2"] > Conf["MAX_PSR_OUTRNG"][1]
         # End if Conf["MAX_PSR_OUTRNG"][0] == 1
 
@@ -324,46 +297,106 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
         # Build Measurement Combinations of Code and Phases
         #--------------------------------------------------------------------
         PreproObs = buildIonoFree(PreproObs, GammaF1F2)
-        PreproObsInfo[SatLabel] = PreproObs
-        
+
 
         #Perform the Code Carrier Smoothing with a Hatch Filter of 100 seconds
         #--------------------------------------------------------------------
-        if DeltaT < 0:
-            DeltaT = 0
-
-        PrevPreproObsInfo[SatLabel]["Ksmooth"] = PrevPreproObsInfo[SatLabel]["Ksmooth"] + DeltaT
-        SmoothingTime = PrevPreproObsInfo[SatLabel]["Ksmooth"]
+        if (PreproObs["Sod"] - PrevPreproObsInfo[SatLabel]["PrevEpoch"]) < 0 :
+            SmoothingTime = PrevPreproObsInfo[SatLabel]["Ksmooth"]
+        else:
+            SmoothingTime = PrevPreproObsInfo[SatLabel]["Ksmooth"] + (PreproObs["Sod"] - PrevPreproObsInfo[SatLabel]["Ksmooth"])
 
         if PrevPreproObsInfo[SatLabel]["Ksmooth"] >= Conf["HATCH_TIME"]:
             SmoothingTime = Conf["HATCH_TIME"]
         # End if PrevPreproObsInfo[SatLabel]["Ksmooth"] >= Conf["HATCH_TIME"]
-
-        # TODO: QUESTIONS for tutorship
-        # TODO: if DeltaT needs to be updated in lines 325 and 263
-        # TODO: about how to caluclate HF
+    
         # CALL HATCH FILTER
-        # if (n2 > 1)
-        # Pionofree_smoothed = (1/n2)*Pionofree + ((n2-1)/n2)*(Pionofree_smoothed_1 + Lionofree-Lionofree_1)
-
         if (SmoothingTime > 0):
-            Alpha = DeltaT / SmoothingTime
+            Alpha = (PreproObs["Sod"] - PrevPreproObsInfo[SatLabel]["PrevEpoch"]) / SmoothingTime
             PreproObs["SmoothIF"] = Alpha + PreproObs["IF_C"] + (1 - Alpha) * (PrevPreproObsInfo[SatLabel]["PrevSmooth"] + (PreproObs["IF_P"] - PrevPreproObsInfo[SatLabel]["IF_P_Prev"]))
-            # Update the dictionaries
-            PrevPreproObsInfo[SatLabel]["PrevSmooth"] = PreproObs["SmoothIF"]
-            PrevPreproObsInfo[SatLabel]["IF_P_Prev"] = PreproObs["IF_P"]
-            PreproObsInfo[SatLabel] = PreproObs
+            # Update the Prev dict
         else:
-            # Update dictionaries
-            PrevPreproObsInfo[SatLabel]["PrevSmooth"] =  PreproObs["IF_C"]
-            PrevPreproObsInfo[SatLabel]["IF_P_Prev"] = PreproObs["IF_P"]
-            PreproObsInfo[SatLabel] = PreproObs
+            # Update the Prev dict
+            PreproObs["SmoothIF"] = PreproObs["IF_C"]
         # End if (SmoothingTime > 0)
 
+        
         # Check Phase Rate (if activated)
         #--------------------------------------------------------------------
+        PreproObs = computePhaseRate(PreproObs, PrevPreproObsInfo, SatLabel)
+
+        if Conf["MAX_PHASE_RATE"][0] == 1:
+            if  PreproObs["PhaseRateL1"] > Conf["MAX_PHASE_RATE"][1]:
+                PreproObs = rejectMeasurement(PreproObs, "MAX_PHASE_RATE_F1")
+            if  PreproObs["PhaseRateL2"] > Conf["MAX_PHASE_RATE"][1]:
+                PreproObs = rejectMeasurement(PreproObs, "MAX_PHASE_RATE_F2")
+            # End if PreproObs["PhaseRateL1"] > Conf["MAX_PHASE_RATE"][1] || PreproObs["PhaseRateL2"] > Conf["MAX_PHASE_RATE"][1]
+        # End if Conf["MAX_PHASE_RATE"][0] == 1
+
+        # Check Phase Rate Step (if activated)
+        #--------------------------------------------------------------------
+        PreproObs = computePhaseRateStep(PreproObs, PrevPreproObsInfo, SatLabel)
+
+        if Conf["MAX_PHASE_RATE_STEP"][0] == 1:
+            if  PreproObs["PhaseRateStepL1"] > Conf["MAX_PHASE_RATE_STEP"][1]:
+                PreproObs = rejectMeasurement(PreproObs, "MAX_PHASE_RATE_STEP_F1")
+            if  PreproObs["PhaseRateStepL2"] > Conf["MAX_PHASE_RATE_STEP"][1]:
+                PreproObs = rejectMeasurement(PreproObs, "MAX_PHASE_RATE_STEP_F2")
+            # End if  PreproObs["PhaseRateStepL1"] > Conf["MAX_PHASE_RATE_STEP"][1] || PreproObs["PhaseRateStepL2"] > Conf["MAX_PHASE_RATE_STEP"][1]
+        # End if Conf["MAX_PHASE_RATE_STEP"][0]
 
 
+        # Check Code Rate detector (if activated)
+        #--------------------------------------------------------------------
+        # Compute the Code Rate in m/s as the first derivative of the raw codes
+        PreproObs = computeCodeRate(PreproObs, PrevPreproObsInfo, SatLabel)
+        if Conf["MAX_CODE_RATE"][0] == 1:
+            if PreproObs["RangeRateL1"] > Conf["MAX_CODE_RATE"][1]:
+                PreproObs = rejectMeasurement(PreproObs, "MAX_RANGE_RATE_F1")
+            if PreproObs["RangeRateL2"] > Conf["MAX_CODE_RATE"][1]:
+                PreproObs = rejectMeasurement(PreproObs, "MAX_RANGE_RATE_F2")
+            # End if PreproObs["RangeRateL1"] > Conf["MAX_CODE_RATE"][1] || PreproObs["RangeRateL2"] > Conf["MAX_CODE_RATE"][1]
+        # End if Conf["MAX_CODE_RATE"][0] == 1
+
+
+        # Check Code Rate Step Detector (if activated)
+        #--------------------------------------------------------------------
+        # Compute Code Rate Step in m/s2 as the second derivative of Raw Codes
+        PreproObs = computeCodeRateStep(PreproObs, PrevPreproObsInfo, SatLabel)
+
+        if Conf["MAX_CODE_RATE_STEP"][0] == 1:
+            if PreproObs["RangeRateStepL1"] > Conf["MAX_CODE_RATE_STEP"][1]:
+                PreproObs = rejectMeasurement(PreproObs, "MAX_RANGE_RATE_STEP_F1")
+            if PreproObs["RangeRateStepL2"] > Conf["MAX_CODE_RATE_STEP"][1]:
+                PreproObs = rejectMeasurement(PreproObs, "MAX_RANGE_RATE_STEP_F2")
+            # End if PreproObs["RangeRateStepL1"] > Conf["MAX_CODE_RATE_STEP"][1] || PreproObs["RangeRateStepL2"] > Conf["MAX_CODE_RATE_STEP"][1]
+        # End if Conf["MAX_CODE_RATE_STEP"][0] == 1
+
+
+        # Update Previous values
+        PrevPreproObsInfo[SatLabel]["PrevEpoch"] = PreproObs["Sod"]
+        
+        PrevPreproObsInfo[SatLabel]["ResetHatchFilter"] = PreproObs["Status"]
+        PrevPreproObsInfo[SatLabel]["Ksmooth"] = PrevPreproObsInfo[SatLabel]["Ksmooth"] + (PreproObs["Sod"] - PrevPreproObsInfo[SatLabel]["PrevEpoch"])
+        PrevPreproObsInfo[SatLabel]["PrevSmooth"] = PreproObs["SmoothIF"]
+        
+        PrevPreproObsInfo[SatLabel]["IF_P_Prev"] = PreproObs["IF_P"]
+        
+        PrevPreproObsInfo[SatLabel]["PrevL1"] = PreproObs["L1Meters"]
+        PrevPreproObsInfo[SatLabel]["PrevPhaseRateL1"] = PreproObs["PhaseRateL1"]
+        PrevPreproObsInfo[SatLabel]["PrevC1"] = PreproObs["C1"]
+        PrevPreproObsInfo[SatLabel]["PrevRangeRateL1"] = PreproObs["RangeRateL1"]
+        
+        PrevPreproObsInfo[SatLabel]["PrevL2"] = PreproObs["L2Meters"]
+        PrevPreproObsInfo[SatLabel]["PrevPhaseRateL2"] = PreproObs["PhaseRateL2"]
+        PrevPreproObsInfo[SatLabel]["PrevC2"] = PreproObs["C2"]
+        PrevPreproObsInfo[SatLabel]["PrevRangeRateL2"] = PreproObs["RangeRateL2"]
+
+
+        # Update Proprocessed information
+        PreproObsInfo[SatLabel] = PreproObs
+
+        
     # End of for SatLabel, PreproObs in PreproObsInfo.items():
 
     return PreproObsInfo
