@@ -22,8 +22,8 @@ def computeCodeRateStep(PreProObs, PrevPreproObsInfo, SatLabel):
         rangeRateStep_f1 = Const.NAN
         rangeRateStep_f2 = Const.NAN
     else:
-        rangeRateStep_f1 = (PrevPreproObsInfo[SatLabel]["PrevRangeRateL1"]) / (PreProObs["Sod"] - PrevPreproObsInfo[SatLabel]["PrevEpoch"])
-        rangeRateStep_f2 = (PrevPreproObsInfo[SatLabel]["PrevRangeRateL2"]) / (PreProObs["Sod"] - PrevPreproObsInfo[SatLabel]["PrevEpoch"])
+        rangeRateStep_f1 = (PreProObs["RangeRateL1"] - PrevPreproObsInfo[SatLabel]["PrevRangeRateL1"]) / (PreProObs["Sod"] - PrevPreproObsInfo[SatLabel]["PrevEpoch"])
+        rangeRateStep_f2 = (PreProObs["PhaseRateL2"] - PrevPreproObsInfo[SatLabel]["PrevRangeRateL2"]) / (PreProObs["Sod"] - PrevPreproObsInfo[SatLabel]["PrevEpoch"])
     
     # Update dictionaries
     PreProObs["RangeRateStepL1"] = rangeRateStep_f1

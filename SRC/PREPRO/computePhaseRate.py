@@ -23,8 +23,8 @@ def computePhaseRateStep(PreProObs, PrevPreproObsInfo, SatLabel):
         phaseRateStep_f1 = Const.NAN
         phaseRateStep_f2 = Const.NAN
     else:
-        phaseRateStep_f1 = (PrevPreproObsInfo[SatLabel]["PrevPhaseRateL1"]) / (PreProObs["Sod"] - PrevPreproObsInfo[SatLabel]["PrevEpoch"])
-        phaseRateStep_f2 = (PrevPreproObsInfo[SatLabel]["PrevPhaseRateL2"]) / (PreProObs["Sod"] - PrevPreproObsInfo[SatLabel]["PrevEpoch"])
+        phaseRateStep_f1 = (PreProObs["PhaseRateL1"] - PrevPreproObsInfo[SatLabel]["PrevPhaseRateL1"]) / (PreProObs["Sod"] - PrevPreproObsInfo[SatLabel]["PrevEpoch"])
+        phaseRateStep_f2 = (PreProObs["PhaseRateL2"] - PrevPreproObsInfo[SatLabel]["PrevPhaseRateL2"]) / (PreProObs["Sod"] - PrevPreproObsInfo[SatLabel]["PrevEpoch"])
     
     # Update dictionaries
     PreProObs["PhaseRateStepL1"] = phaseRateStep_f1

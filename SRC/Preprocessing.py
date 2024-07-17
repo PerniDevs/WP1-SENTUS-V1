@@ -183,7 +183,7 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
             "IF_P": Const.NAN,            # Iono-free of Phases
             "SmoothIF": Const.NAN,        # Smoothed Iono-free of Codes 
             
-            "Valid": 0,                   # Measurement Status
+            "Valid": 1,                   # Measurement Status
             "RejectionCause": 0,          # Cause of rejection flag
             "Status": 0,                  # Smoothing status
             
@@ -262,6 +262,7 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
 
         # Check measurements data gaps
         #--------------------------------------------------------------------
+        # TODO:  Correct status and Valid flags 
         if PreproObs["Sod"] - PrevPreproObsInfo[SatLabel]["PrevEpoch"] > Conf["MAX_DATA_GAP"][1]:
             if Conf["MAX_DATA_GAP"][0] == 1:
                 PreproObs = rejectMeasurement(PreproObs, "MAX_DATA_GAP")
@@ -307,6 +308,7 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
         #--------------------------------------------------------------------
         if PrevPreproObsInfo[SatLabel]["ResetHatchFilter"] == 1 :
 
+            # Set Ksmooth and Reset Hatch filter
             PrevPreproObsInfo[SatLabel]["Ksmooth"] = 1
             PrevPreproObsInfo[SatLabel]["ResetHatchFilter"] = 0
 
@@ -316,9 +318,10 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
             PrevPreproObsInfo[SatLabel]["IF_P_Prev"] = PreproObs["IF_P"] 
 
         else:
-
+            # Calculate Smoothing time
             SmoothingTime = PrevPreproObsInfo[SatLabel]["Ksmooth"] + (PreproObs["Sod"] - PrevPreproObsInfo[SatLabel]["PrevEpoch"])
 
+            # Set smooth time with a time window of 100s
             if PrevPreproObsInfo[SatLabel]["Ksmooth"] >= Conf["HATCH_TIME"]:
                 SmoothingTime = Conf["HATCH_TIME"]
             # End if PrevPreproObsInfo[SatLabel]["Ksmooth"] >= Conf["HATCH_TIME"]
