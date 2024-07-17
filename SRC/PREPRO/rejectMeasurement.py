@@ -1,5 +1,5 @@
 def rejectMeasurement(PreproObs, Criterion):
-    PreproObs["Valid"] = 0
+    PreproObs["Valid"] = 1
     if Criterion == "RCVR_MASK":
         PreproObs["RejectionCause"] = 1
         

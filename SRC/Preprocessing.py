@@ -223,7 +223,7 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
         # Get L2-meters
         SatPreproObsInfo["L2Meters"] = SatPreproObsInfo["L2"] * Wave["F2"]
         # Get Valid
-        # SatPreproObsInfo["Valid"] = 0
+        SatPreproObsInfo["Valid"] = 0
 
         # Prepare output for the satellite
         PreproObsInfo[SatLabel] = SatPreproObsInfo
