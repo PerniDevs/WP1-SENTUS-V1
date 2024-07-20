@@ -26,7 +26,8 @@ sys.path.append(os.getcwd() + '/' + \
 from COMMON import GnssConstants
 import numpy as np
 from collections import OrderedDict
-# from COMMON.Plots import generatePlot
+from COMMON.missingPRNs import findMissingPRNs
+from COMMON.Plots import generatePlot
 
 
 def initPlot(PreproObsFile, PlotConf, Title, Label):
@@ -69,7 +70,45 @@ def plotNumSats(PreproObsFile, PreproObsData):
 
 # Plot Code IF - Code IF Smoothed
 def plotIFIFSmoothed(PreproObsFile, PreproObsData):
+    print("Ploting Satellites Visibilities ... \n")
+
+    missing_prns = findMissingPRNs(sorted(unique(df[LOS_IDX["PRN"]])))
+
     PlotConf = {}
+    
+    PlotConf["Type"] = "Lines"
+    PlotConf["FigSize"] = (8.4,6.6)
+    PlotConf["Title"] = "Satellite Visibility from s6an on Year 24 DoY 011"
+    
+    PlotConf["yTicks"] = sorted(np.concatenate((sorted(unique(df[LOS_IDX["PRN"]])), missing_prns)))
+    PlotConf["yTicksLabels"] = sorted(np.concatenate((sorted(unique(df[LOS_IDX["PRN"]])), missing_prns)))
+    PlotConf["yLim"] = [0, max(unique(df[LOS_IDX["PRN"]])) + 1]
+
+    PlotConf["xLabel"] = "Hour of DoY 006"
+    PlotConf["xTicks"] = range(0, 25)
+    PlotConf["xLim"] = [0, 24]
+
+    PlotConf["Grid"] = 1
+
+    PlotConf["Marker"] = '|'
+    PlotConf["LineWidth"] = 15
+
+    PlotConf["ColorBar"] = "gnuplot"
+    PlotConf["ColorBarLabel"] = "Elevation [deg]"
+    PlotConf["ColorBarMin"] = 0.
+    PlotConf["ColorBarMax"] = 90.
+
+    PlotConf["xData"] = {}
+    PlotConf["yData"] = {}
+    PlotConf["zData"] = {}
+    for prn in sorted(unique(df[LOS_IDX["PRN"]])):
+        Label = "G" + ("%02d" % prn)
+        FilterCond = df[LOS_IDX["PRN"]] == prn
+        PlotConf["xData"][Label] = df[LOS_IDX["SOD"]][FilterCond] / GnssConstants.S_IN_H
+        PlotConf["yData"][Label] = df[LOS_IDX["PRN"]][FilterCond]
+        PlotConf["zData"][Label] = df[LOS_IDX["ELEV"]][FilterCond]
+
+    PlotConf["Path"] = sys.argv[1] + '/OUT/PPVE/SAT/' + 'SAT_VISIBILITY_SENTINEL6A_D011Y24.png'
 
 
 # Plot C/N0
