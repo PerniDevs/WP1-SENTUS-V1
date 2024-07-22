@@ -1,4 +1,3 @@
-
 import sys, os
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -17,7 +16,7 @@ import warnings
 import matplotlib.cbook
 warnings.filterwarnings("ignore", category=matplotlib.cbook.mplDeprecation)
 
-from COMMON.PlotsConstants import COLORS, MARKERS
+# from COMMON.PlotsConstants import COLORS, MARKERS
 
 # Adjust chunk size
 plt.rcParams['agg.path.chunksize'] = 10000
@@ -126,7 +125,7 @@ def prepareColorBar(PlotConf, ax, Values, scatter = None):
     cmap = mpl.cm.get_cmap(PlotConf["ColorBar"])
     cbar = mpl.colorbar.ColorbarBase(color_ax, cmap=cmap, norm=mpl.colors.Normalize(vmin=Min, vmax=Max),
     label=PlotConf["ColorBarLabel"])
-
+    
     try:
     #  PlotConf["ColorBarSetTicks"]:
         cbar.set_ticks(PlotConf["ColorBarSetTicks"])
@@ -224,17 +223,23 @@ def generateLinesPlot(PlotConf):
 
     for Label in PlotConf["yData"].keys():
         if "ColorBar" in PlotConf:
+            colors = cmap(normalize(np.array(PlotConf["zData"][Label])))
+
+            flags = PlotConf["Flags"][Label]
+            # Apply grey where flag is 1
+            colors[flags != 1] = mpl.colors.to_rgba("gray")
+            
             try:
                 ax.scatter(PlotConf["xData"][Label], PlotConf["yData"][Label], 
                 marker = PlotConf["Marker"],
                 linewidth = LineWidth,
                 s = PlotConf['s'],
-                c = cmap(normalize(np.array(PlotConf["zData"][Label]))))
+                c = colors)
             except:
                 ax.scatter(PlotConf["xData"][Label], PlotConf["yData"][Label], 
                 marker = PlotConf["Marker"],
                 linewidth = LineWidth,
-                c = cmap(normalize(np.array(PlotConf["zData"][Label]))))
+                c = colors)
 
         else:
             if Label == 0 and ax2: 

@@ -2,3 +2,5 @@ OBS/
 NAV/
 
 __pycache__/
+
+*.ipynb

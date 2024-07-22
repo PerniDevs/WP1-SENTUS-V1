@@ -26,8 +26,10 @@ sys.path.append(os.getcwd() + '/' + \
 from COMMON import GnssConstants
 import numpy as np
 from collections import OrderedDict
-from COMMON.missingPRNs import findMissingPRNs
+from COMMON.missingPRNs import missing_prns_before
 from COMMON.Plots import generatePlot
+from COMMON.allPRNs import allprns
+from COMMON.dataDivider import dataDivider
 
 
 def initPlot(PreproObsFile, PlotConf, Title, Label):
@@ -60,38 +62,32 @@ def convert_satlabel_to_const(value):
 
 # Plot Satellite Visibility
 def plotSatVisibility(PreproObsFile, PreproObsData):
-    PlotConf = {}
 
-
-# Plot Number of Satellites
-def plotNumSats(PreproObsFile, PreproObsData):
-    PlotConf = {}
-
-
-# Plot Code IF - Code IF Smoothed
-def plotIFIFSmoothed(PreproObsFile, PreproObsData):
-    print("Ploting Satellites Visibilities ... \n")
-
-    missing_prns = findMissingPRNs(sorted(unique(df[LOS_IDX["PRN"]])))
+    all_prns = allprns()
 
     PlotConf = {}
-    
     PlotConf["Type"] = "Lines"
-    PlotConf["FigSize"] = (8.4,6.6)
-    PlotConf["Title"] = "Satellite Visibility from s6an on Year 24 DoY 011"
-    
-    PlotConf["yTicks"] = sorted(np.concatenate((sorted(unique(df[LOS_IDX["PRN"]])), missing_prns)))
-    PlotConf["yTicksLabels"] = sorted(np.concatenate((sorted(unique(df[LOS_IDX["PRN"]])), missing_prns)))
-    PlotConf["yLim"] = [0, max(unique(df[LOS_IDX["PRN"]])) + 1]
+    PlotConf["FigSize"] = (16.4,14.6)
+    PlotConf["Title"] = "Satellite Visibility from s6an on Year 24 DoY 011"   
 
-    PlotConf["xLabel"] = "Hour of DoY 006"
+    # PlotConf["yLabel"] = "GPS-GAL-PRN"
+    # PlotConf["yTicks"] = range(1, len(all_prns.values()))
+    # PlotConf["yTicksLabels"] = sorted(all_prns.keys())
+    # PlotConf["yLim"] = [0, len(all_prns.values())]
+
+    PlotConf["yLabel"] = "GPS-GAL-PRN"
+    PlotConf["yTicks"] = range(0, len(sorted(unique(PreproObsData[PreproIdx["PRN"]]))))
+    PlotConf["yTicksLabels"] = sorted(unique(PreproObsData[PreproIdx["PRN"]]))
+    PlotConf["yLim"] = [-0.5, len(sorted(unique(PreproObsData[PreproIdx["PRN"]])))]
+
+    PlotConf["xLabel"] = "Hour of DoY 011"
     PlotConf["xTicks"] = range(0, 25)
     PlotConf["xLim"] = [0, 24]
 
     PlotConf["Grid"] = 1
 
-    PlotConf["Marker"] = '|'
-    PlotConf["LineWidth"] = 15
+    PlotConf["Marker"] = '.'
+    PlotConf["LineWidth"] = 1.5
 
     PlotConf["ColorBar"] = "gnuplot"
     PlotConf["ColorBarLabel"] = "Elevation [deg]"
@@ -101,14 +97,79 @@ def plotIFIFSmoothed(PreproObsFile, PreproObsData):
     PlotConf["xData"] = {}
     PlotConf["yData"] = {}
     PlotConf["zData"] = {}
-    for prn in sorted(unique(df[LOS_IDX["PRN"]])):
-        Label = "G" + ("%02d" % prn)
-        FilterCond = df[LOS_IDX["PRN"]] == prn
-        PlotConf["xData"][Label] = df[LOS_IDX["SOD"]][FilterCond] / GnssConstants.S_IN_H
-        PlotConf["yData"][Label] = df[LOS_IDX["PRN"]][FilterCond]
-        PlotConf["zData"][Label] = df[LOS_IDX["ELEV"]][FilterCond]
+    PlotConf["Flags"] = {}
 
-    PlotConf["Path"] = sys.argv[1] + '/OUT/PPVE/SAT/' + 'SAT_VISIBILITY_SENTINEL6A_D011Y24.png'
+    # for prn_key, prn_value in all_prns.items():
+    #     FilterCond = PreproObsData[PreproIdx["PRN"]] == prn_key
+    #     PlotConf["xData"][prn_value] = PreproObsData[PreproIdx["SOD"]][FilterCond] / GnssConstants.S_IN_H
+    #     PlotConf["yData"][prn_value] = PreproObsData[PreproIdx["PRN"]][FilterCond]
+    #     PlotConf["zData"][prn_value] = PreproObsData[PreproIdx["ELEV"]][FilterCond]
+    #     PlotConf["Flags"][prn_value] = PreproObsData[PreproIdx["STATUS"]][FilterCond]
+
+    for prn in sorted(unique(PreproObsData[PreproIdx["PRN"]])):
+        FilterCond = PreproObsData[PreproIdx["PRN"]] == prn
+        PlotConf["xData"][prn] = PreproObsData[PreproIdx["SOD"]][FilterCond] / GnssConstants.S_IN_H
+        PlotConf["yData"][prn] = PreproObsData[PreproIdx["PRN"]][FilterCond]
+        PlotConf["zData"][prn] = PreproObsData[PreproIdx["ELEV"]][FilterCond]
+        PlotConf["Flags"][prn] = PreproObsData[PreproIdx["STATUS"]][FilterCond]
+
+    PlotConf["Path"] = sys.argv[1] + '/OUT/PPVE/SAT/' + 'SAT_VISIBILITY_s6an_D011Y24.png'
+
+    # Debugging output
+    generatePlot(PlotConf)
+
+# Plot Number of Satellites
+def plotNumSats(PreproObsFile, PreproObsData):
+    
+    PlotConf = {}
+
+    # PlotConf["Type"] = "Lines"
+    # PlotConf["FigSize"] = (10.4, 6.6)
+    
+    # PlotConf["yLabel"] = "Number of Satellites"
+    # PlotConf["xLabel"] = "Hour DoY 006"
+    
+    # PlotConf["xTicks"] = range(
+    #     round(PreproObsData[PreproIdx["SOD"]].min() / GnssConstants.S_IN_H),
+    #     round(PreproObsData[PreproIdx["SOD"]].max() / GnssConstants.S_IN_H) + 1
+    # )
+    # PlotConf["xLim"] = [
+    #     round(PreproObsData[PreproIdx["SOD"]].min() / GnssConstants.S_IN_H),
+    #     round(PreproObsData[PreproIdx["SOD"]].max() / GnssConstants.S_IN_H)
+    # ]
+    
+    # PlotConf["yLim"] = [0, 20]
+    # PlotConf["yTicks"] = range(0, 20)
+    
+    # PlotConf["Grid"] = 1
+    
+    # PlotConf["c"] = {0: "orange", 1: "green"}
+    
+    # PlotConf["Marker"] = ""
+    # PlotConf["LineWidth"] = 1
+    # PlotConf["LineStyle"] = "-"
+    
+    # PlotConf["Label"] = {0: "RAW", 1: "SMOOTHED"}
+    # PlotConf["LabelLoc"] = "upper left"
+    
+    # PlotConf["xData"] = {}
+    # PlotConf["yData"] = {}
+    
+    # all_prns =allprns()
+
+    # e_const, g_const = dataDivider(PreproObsData, all_prns)
+
+    # # Handling GPS data
+    # g_const_counts = g_const.groupby(PreproObsData[PreproIdx["SOD"]])[PreproObsData[PreproIdx["PRN"]]].nunique()
+    # PlotConf["xData"][0] = g_const_counts.index / GnssConstants.S_IN_H
+    # PlotConf["yData"][0] = g_const_counts.values
+
+    # # Continue with plotting using PlotConf
+    # generatePlot(PlotConf)
+
+# Plot Code IF - Code IF Smoothed
+def plotIFIFSmoothed(PreproObsFile, PreproObsData):
+    PlotConf = {}
 
 
 # Plot C/N0

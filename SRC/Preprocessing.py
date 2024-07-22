@@ -196,7 +196,6 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
             "RangeRateStepL2": Const.NAN, # L2 Code Rate Step
             "PhaseRateL2": Const.NAN,     # L2 Phase Rate
             "PhaseRateStepL2": Const.NAN, # L2 Phase Rate Step
-
         } # End of SatPreproObsInfo
 
         # Prepare outputs
@@ -223,7 +222,8 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
         # Get L2-meters
         SatPreproObsInfo["L2Meters"] = SatPreproObsInfo["L2"] * Wave["F2"]
         # Get Valid
-        SatPreproObsInfo["Valid"] = 0
+        if SatPreproObsInfo["Sod"] == 0:
+            SatPreproObsInfo["Valid"] = 0
 
         # Prepare output for the satellite
         PreproObsInfo[SatLabel] = SatPreproObsInfo
@@ -256,17 +256,18 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
 
             # Gamma
             GammaF1F2 = Const.GAL_GAMMA_E1E5A
-
         # End of if if Constel == 'G':
 
 
         # Check measurements data gaps
         #--------------------------------------------------------------------
-        # TODO:  Correct status and Valid flags 
+        # print(PreproObs["Sod"] - PrevPreproObsInfo[SatLabel]["PrevEpoch"])
+
         if PreproObs["Sod"] - PrevPreproObsInfo[SatLabel]["PrevEpoch"] > Conf["MAX_DATA_GAP"][1]:
             if Conf["MAX_DATA_GAP"][0] == 1:
                 PreproObs = rejectMeasurement(PreproObs, "MAX_DATA_GAP")
             PrevPreproObsInfo[SatLabel] = resetPrevPreproObsInfo(Conf, PreproObs)
+
 
         # Check Satellite Elevation Angle in front of the minimum by configuration
         #--------------------------------------------------------------------
@@ -306,7 +307,7 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
 
         #Perform the Code Carrier Smoothing with a Hatch Filter of 100 seconds
         #--------------------------------------------------------------------
-        if PrevPreproObsInfo[SatLabel]["ResetHatchFilter"] == 1 :
+        if PrevPreproObsInfo[SatLabel]["ResetHatchFilter"] == 1:
 
             # Set Ksmooth and Reset Hatch filter
             PrevPreproObsInfo[SatLabel]["Ksmooth"] = 1
@@ -331,11 +332,9 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
             Alpha = (PreproObs["Sod"] - PrevPreproObsInfo[SatLabel]["PrevEpoch"]) / SmoothingTime
             PreproObs["SmoothIF"] = Alpha * PreproObs["IF_C"] + (1 - Alpha) * (PrevPreproObsInfo[SatLabel]["PrevSmooth"] + (PreproObs["IF_P"] - PrevPreproObsInfo[SatLabel]["IF_P_Prev"]))
             
-            # Update the Prev dict
-            PrevPreproObsInfo[SatLabel]["PrevSmooth"] = PreproObs["SmoothIF"]
-            PrevPreproObsInfo[SatLabel]["IF_P_Prev"] = PreproObs["IF_P"] 
             PrevPreproObsInfo[SatLabel]["Ksmooth"] = PrevPreproObsInfo[SatLabel]["Ksmooth"] + (PreproObs["Sod"] - PrevPreproObsInfo[SatLabel]["PrevEpoch"])
-            
+            PrevPreproObsInfo[SatLabel]["PrevSmooth"] = PreproObs["SmoothIF"]
+            PrevPreproObsInfo[SatLabel]["IF_P_Prev"] = PreproObs["IF_P"]
             # End if (SmoothingTime > 0)
         # End if PrevPreproObsInfo[SatLabel]["ResetHatchFilter"] == 1
 
@@ -349,6 +348,8 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
                 PreproObs = rejectMeasurement(PreproObs, "MAX_PHASE_RATE_F1")
             if  PreproObs["PhaseRateL2"] > Conf["MAX_PHASE_RATE"][1]:
                 PreproObs = rejectMeasurement(PreproObs, "MAX_PHASE_RATE_F2")
+            # Reset the hatch filter 
+            PrevPreproObsInfo[SatLabel]["ResetHatchFilter"] = 1
             # End if PreproObs["PhaseRateL1"] > Conf["MAX_PHASE_RATE"][1] || PreproObs["PhaseRateL2"] > Conf["MAX_PHASE_RATE"][1]
         # End if Conf["MAX_PHASE_RATE"][0] == 1
 
@@ -362,6 +363,8 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
                 PreproObs = rejectMeasurement(PreproObs, "MAX_PHASE_RATE_STEP_F1")
             if  PreproObs["PhaseRateStepL2"] > Conf["MAX_PHASE_RATE_STEP"][1]:
                 PreproObs = rejectMeasurement(PreproObs, "MAX_PHASE_RATE_STEP_F2")
+            # Reset the hatch filter 
+            PrevPreproObsInfo[SatLabel]["ResetHatchFilter"] = 1
             # End if  PreproObs["PhaseRateStepL1"] > Conf["MAX_PHASE_RATE_STEP"][1] || PreproObs["PhaseRateStepL2"] > Conf["MAX_PHASE_RATE_STEP"][1]
         # End if Conf["MAX_PHASE_RATE_STEP"][0]
 
@@ -375,6 +378,8 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
                 PreproObs = rejectMeasurement(PreproObs, "MAX_RANGE_RATE_F1")
             if PreproObs["RangeRateL2"] > Conf["MAX_CODE_RATE"][1]:
                 PreproObs = rejectMeasurement(PreproObs, "MAX_RANGE_RATE_F2")
+            # Reset the hatch filter 
+            PrevPreproObsInfo[SatLabel]["ResetHatchFilter"] = 1
             # End if PreproObs["RangeRateL1"] > Conf["MAX_CODE_RATE"][1] || PreproObs["RangeRateL2"] > Conf["MAX_CODE_RATE"][1]
         # End if Conf["MAX_CODE_RATE"][0] == 1
 
@@ -389,11 +394,14 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
                 PreproObs = rejectMeasurement(PreproObs, "MAX_RANGE_RATE_STEP_F1")
             if PreproObs["RangeRateStepL2"] > Conf["MAX_CODE_RATE_STEP"][1]:
                 PreproObs = rejectMeasurement(PreproObs, "MAX_RANGE_RATE_STEP_F2")
+            # Reset the hatch filter 
+            PrevPreproObsInfo[SatLabel]["ResetHatchFilter"] = 1
             # End if PreproObs["RangeRateStepL1"] > Conf["MAX_CODE_RATE_STEP"][1] || PreproObs["RangeRateStepL2"] > Conf["MAX_CODE_RATE_STEP"][1]
         # End if Conf["MAX_CODE_RATE_STEP"][0] == 1
 
-        # Update Smoothing status if it is superior to 6min = 100
-        # print(PrevPreproObsInfo[SatLabel]["Ksmooth"], Conf["HATCH_STATE_F"]*Conf["HATCH_TIME"], PrevPreproObsInfo[SatLabel]["Ksmooth"] >= (Conf["HATCH_STATE_F"]*Conf["HATCH_TIME"]), PreproObs["Valid"] == 1)
+
+        # Update Smoothing status if it is superior to 100s
+        # print(PrevPreproObsInfo[SatLabel]["Ksmooth"])
         if (PrevPreproObsInfo[SatLabel]["Ksmooth"] >= (Conf["HATCH_STATE_F"]*Conf["HATCH_TIME"])) and PreproObs["Valid"] == 1:
             PreproObs["Status"] = 1
         else:
@@ -401,12 +409,6 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
 
         # Update Previous values
         PrevPreproObsInfo[SatLabel]["PrevEpoch"] = PreproObs["Sod"]
-        
-        PrevPreproObsInfo[SatLabel]["ResetHatchFilter"] = PreproObs["Status"]
-        PrevPreproObsInfo[SatLabel]["Ksmooth"] = PrevPreproObsInfo[SatLabel]["Ksmooth"] + (PreproObs["Sod"] - PrevPreproObsInfo[SatLabel]["PrevEpoch"])
-        PrevPreproObsInfo[SatLabel]["PrevSmooth"] = PreproObs["SmoothIF"]
-        
-        PrevPreproObsInfo[SatLabel]["IF_P_Prev"] = PreproObs["IF_P"]
 
         PrevPreproObsInfo[SatLabel]["Status"] = PreproObs["Status"]
         
