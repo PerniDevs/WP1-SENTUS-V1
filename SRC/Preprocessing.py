@@ -261,10 +261,10 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
 
         # Check measurements data gaps
         #--------------------------------------------------------------------
-        # print(PreproObs["Sod"] - PrevPreproObsInfo[SatLabel]["PrevEpoch"])
-
+        # TODO: Periodo de no visibilidad si DeltaT es mayor a 1000 rejection cause sigue igual, o viceversa
+        # verificar con la elevacion con las epocas anteriores  
         if PreproObs["Sod"] - PrevPreproObsInfo[SatLabel]["PrevEpoch"] > Conf["MAX_DATA_GAP"][1]:
-            if Conf["MAX_DATA_GAP"][0] == 1:
+            if Conf["MAX_DATA_GAP"][0] == 1 and (PreproObs["Sod"] - PrevPreproObsInfo[SatLabel]["PrevEpoch"]) < 1000:
                 PreproObs = rejectMeasurement(PreproObs, "MAX_DATA_GAP")
             PrevPreproObsInfo[SatLabel] = resetPrevPreproObsInfo(Conf, PreproObs)
 
@@ -343,13 +343,15 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
         #--------------------------------------------------------------------
         PreproObs = computePhaseRate(PreproObs, PrevPreproObsInfo, SatLabel)
 
-        if Conf["MAX_PHASE_RATE"][0] == 1:
-            if  PreproObs["PhaseRateL1"] > Conf["MAX_PHASE_RATE"][1]:
+        if Conf["MAX_PHASE_RATE"][0] == 1 and PreproObs["PhaseRateL1"] != Const.NAN:
+            if  abs(PreproObs["PhaseRateL1"]) > Conf["MAX_PHASE_RATE"][1]:
                 PreproObs = rejectMeasurement(PreproObs, "MAX_PHASE_RATE_F1")
-            if  PreproObs["PhaseRateL2"] > Conf["MAX_PHASE_RATE"][1]:
+                # Reset the hatch filter 
+                PrevPreproObsInfo[SatLabel]["ResetHatchFilter"] = 1
+            if  abs(PreproObs["PhaseRateL2"]) > Conf["MAX_PHASE_RATE"][1]:
                 PreproObs = rejectMeasurement(PreproObs, "MAX_PHASE_RATE_F2")
-            # Reset the hatch filter 
-            PrevPreproObsInfo[SatLabel]["ResetHatchFilter"] = 1
+                # Reset the hatch filter 
+                PrevPreproObsInfo[SatLabel]["ResetHatchFilter"] = 1
             # End if PreproObs["PhaseRateL1"] > Conf["MAX_PHASE_RATE"][1] || PreproObs["PhaseRateL2"] > Conf["MAX_PHASE_RATE"][1]
         # End if Conf["MAX_PHASE_RATE"][0] == 1
 
@@ -358,13 +360,15 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
         #--------------------------------------------------------------------
         PreproObs = computePhaseRateStep(PreproObs, PrevPreproObsInfo, SatLabel)
 
-        if Conf["MAX_PHASE_RATE_STEP"][0] == 1:
-            if  PreproObs["PhaseRateStepL1"] > Conf["MAX_PHASE_RATE_STEP"][1]:
+        if Conf["MAX_PHASE_RATE_STEP"][0] == 1 and PreproObs["PhaseRateStepL1"] != Const.NAN:
+            if  abs(PreproObs["PhaseRateStepL1"]) > Conf["MAX_PHASE_RATE_STEP"][1]:
                 PreproObs = rejectMeasurement(PreproObs, "MAX_PHASE_RATE_STEP_F1")
-            if  PreproObs["PhaseRateStepL2"] > Conf["MAX_PHASE_RATE_STEP"][1]:
+                # Reset the hatch filter 
+                PrevPreproObsInfo[SatLabel]["ResetHatchFilter"] = 1
+            if  abs(PreproObs["PhaseRateStepL2"]) > Conf["MAX_PHASE_RATE_STEP"][1]:
                 PreproObs = rejectMeasurement(PreproObs, "MAX_PHASE_RATE_STEP_F2")
-            # Reset the hatch filter 
-            PrevPreproObsInfo[SatLabel]["ResetHatchFilter"] = 1
+                # Reset the hatch filter 
+                PrevPreproObsInfo[SatLabel]["ResetHatchFilter"] = 1
             # End if  PreproObs["PhaseRateStepL1"] > Conf["MAX_PHASE_RATE_STEP"][1] || PreproObs["PhaseRateStepL2"] > Conf["MAX_PHASE_RATE_STEP"][1]
         # End if Conf["MAX_PHASE_RATE_STEP"][0]
 
@@ -373,13 +377,15 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
         #--------------------------------------------------------------------
         # Compute the Code Rate in m/s as the first derivative of the raw codes
         PreproObs = computeCodeRate(PreproObs, PrevPreproObsInfo, SatLabel)
-        if Conf["MAX_CODE_RATE"][0] == 1:
-            if PreproObs["RangeRateL1"] > Conf["MAX_CODE_RATE"][1]:
+        if Conf["MAX_CODE_RATE"][0] == 1 and PreproObs["RangeRateL1"] != Const.NAN:
+            if abs(PreproObs["RangeRateL1"]) > Conf["MAX_CODE_RATE"][1]:
                 PreproObs = rejectMeasurement(PreproObs, "MAX_RANGE_RATE_F1")
-            if PreproObs["RangeRateL2"] > Conf["MAX_CODE_RATE"][1]:
+                # Reset the hatch filter 
+                PrevPreproObsInfo[SatLabel]["ResetHatchFilter"] = 1
+            if abs(PreproObs["RangeRateL2"]) > Conf["MAX_CODE_RATE"][1]:
                 PreproObs = rejectMeasurement(PreproObs, "MAX_RANGE_RATE_F2")
-            # Reset the hatch filter 
-            PrevPreproObsInfo[SatLabel]["ResetHatchFilter"] = 1
+                # Reset the hatch filter 
+                PrevPreproObsInfo[SatLabel]["ResetHatchFilter"] = 1
             # End if PreproObs["RangeRateL1"] > Conf["MAX_CODE_RATE"][1] || PreproObs["RangeRateL2"] > Conf["MAX_CODE_RATE"][1]
         # End if Conf["MAX_CODE_RATE"][0] == 1
 
@@ -389,13 +395,15 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
         # Compute Code Rate Step in m/s2 as the second derivative of Raw Codes
         PreproObs = computeCodeRateStep(PreproObs, PrevPreproObsInfo, SatLabel)
 
-        if Conf["MAX_CODE_RATE_STEP"][0] == 1:
-            if PreproObs["RangeRateStepL1"] > Conf["MAX_CODE_RATE_STEP"][1]:
+        if Conf["MAX_CODE_RATE_STEP"][0] == 1 and PreproObs["RangeRateStepL1"] != Const.NAN:
+            if abs(PreproObs["RangeRateStepL1"]) > Conf["MAX_CODE_RATE_STEP"][1]:
                 PreproObs = rejectMeasurement(PreproObs, "MAX_RANGE_RATE_STEP_F1")
-            if PreproObs["RangeRateStepL2"] > Conf["MAX_CODE_RATE_STEP"][1]:
+                # Reset the hatch filter 
+                PrevPreproObsInfo[SatLabel]["ResetHatchFilter"] = 1
+            if abs(PreproObs["RangeRateStepL2"]) > Conf["MAX_CODE_RATE_STEP"][1]:
                 PreproObs = rejectMeasurement(PreproObs, "MAX_RANGE_RATE_STEP_F2")
-            # Reset the hatch filter 
-            PrevPreproObsInfo[SatLabel]["ResetHatchFilter"] = 1
+                # Reset the hatch filter 
+                PrevPreproObsInfo[SatLabel]["ResetHatchFilter"] = 1
             # End if PreproObs["RangeRateStepL1"] > Conf["MAX_CODE_RATE_STEP"][1] || PreproObs["RangeRateStepL2"] > Conf["MAX_CODE_RATE_STEP"][1]
         # End if Conf["MAX_CODE_RATE_STEP"][0] == 1
 

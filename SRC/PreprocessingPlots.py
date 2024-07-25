@@ -48,6 +48,8 @@ def initPlot(PreproObsFile, PlotConf, Title, Label):
 
     PlotConf["Path"] = sys.argv[1] + '/OUT/PPVE/figures/' + \
         '%s_%s_Y%sD%s.png' % (Label, Rcvr, Year, Doy)
+    
+    return PlotConf
 
 
 # Function to convert 'G01', 'G02', etc. to 1, 2, etc.
@@ -68,8 +70,8 @@ def plotSatVisibility(PreproObsFile, PreproObsData):
     PlotConf = {}
     PlotConf["Type"] = "Lines"
     PlotConf["FigSize"] = (16.4,14.6)
-    PlotConf["Title"] = "Satellite Visibility from s6an on Year 24 DoY 011"   
-
+    PlotConf["Title"] = "Satellite Visibility from s6an on Year 24 DoY 011"
+       
     # PlotConf["yLabel"] = "GPS-GAL-PRN"
     # PlotConf["yTicks"] = range(1, len(all_prns.values()))
     # PlotConf["yTicksLabels"] = sorted(all_prns.keys())
@@ -100,11 +102,6 @@ def plotSatVisibility(PreproObsFile, PreproObsData):
     PlotConf["Flags"] = {}
 
     # for prn_key, prn_value in all_prns.items():
-    #     FilterCond = PreproObsData[PreproIdx["PRN"]] == prn_key
-    #     PlotConf["xData"][prn_value] = PreproObsData[PreproIdx["SOD"]][FilterCond] / GnssConstants.S_IN_H
-    #     PlotConf["yData"][prn_value] = PreproObsData[PreproIdx["PRN"]][FilterCond]
-    #     PlotConf["zData"][prn_value] = PreproObsData[PreproIdx["ELEV"]][FilterCond]
-    #     PlotConf["Flags"][prn_value] = PreproObsData[PreproIdx["STATUS"]][FilterCond]
 
     for prn in sorted(unique(PreproObsData[PreproIdx["PRN"]])):
         FilterCond = PreproObsData[PreproIdx["PRN"]] == prn
@@ -118,54 +115,147 @@ def plotSatVisibility(PreproObsFile, PreproObsData):
     # Debugging output
     generatePlot(PlotConf)
 
+
 # Plot Number of Satellites
 def plotNumSats(PreproObsFile, PreproObsData):
-    
-    PlotConf = {}
 
-    # PlotConf["Type"] = "Lines"
-    # PlotConf["FigSize"] = (10.4, 6.6)
-    
-    # PlotConf["yLabel"] = "Number of Satellites"
-    # PlotConf["xLabel"] = "Hour DoY 006"
-    
-    # PlotConf["xTicks"] = range(
-    #     round(PreproObsData[PreproIdx["SOD"]].min() / GnssConstants.S_IN_H),
-    #     round(PreproObsData[PreproIdx["SOD"]].max() / GnssConstants.S_IN_H) + 1
-    # )
-    # PlotConf["xLim"] = [
-    #     round(PreproObsData[PreproIdx["SOD"]].min() / GnssConstants.S_IN_H),
-    #     round(PreproObsData[PreproIdx["SOD"]].max() / GnssConstants.S_IN_H)
-    # ]
-    
-    # PlotConf["yLim"] = [0, 20]
-    # PlotConf["yTicks"] = range(0, 20)
-    
-    # PlotConf["Grid"] = 1
-    
-    # PlotConf["c"] = {0: "orange", 1: "green"}
-    
-    # PlotConf["Marker"] = ""
-    # PlotConf["LineWidth"] = 1
-    # PlotConf["LineStyle"] = "-"
-    
-    # PlotConf["Label"] = {0: "RAW", 1: "SMOOTHED"}
-    # PlotConf["LabelLoc"] = "upper left"
-    
-    # PlotConf["xData"] = {}
-    # PlotConf["yData"] = {}
-    
-    # all_prns =allprns()
+    # Divide data frame
 
-    # e_const, g_const = dataDivider(PreproObsData, all_prns)
+    PreproObsDataGalileo = PreproObsData[PreproObsData[PreproIdx["PRN"]].str.startswith("E")]
+    galNumSat_smoothed = PreproObsDataGalileo[PreproObsData[PreproIdx["STATUS"]] == 1]
+    # print("")
+    # print("GAL")
+    # print(PreproObsDataGalileo.groupby(PreproIdx["SOD"])[PreproIdx["STATUS"]][86350].sum())
+    # print(galNumSat_smoothed.groupby(PreproIdx["SOD"])[PreproIdx["STATUS"]][86350].sum())
 
-    # # Handling GPS data
-    # g_const_counts = g_const.groupby(PreproObsData[PreproIdx["SOD"]])[PreproObsData[PreproIdx["PRN"]]].nunique()
-    # PlotConf["xData"][0] = g_const_counts.index / GnssConstants.S_IN_H
-    # PlotConf["yData"][0] = g_const_counts.values
+    PreproObsDataGPS = PreproObsData[PreproObsData[PreproIdx["PRN"]].str.startswith("G")]
+    gpsNumSat_smoothed = PreproObsDataGPS[PreproObsDataGPS[PreproIdx["STATUS"]] == 1]
+    # print("")
+    # print("GPS")
+    # print(PreproObsDataGPS.groupby(PreproIdx["SOD"])[PreproIdx["STATUS"]][86350].sum())
+    # print(gpsNumSat_smoothed.groupby(PreproIdx["SOD"])[PreproIdx["STATUS"]][86350].sum())
+    
+    gal_gps_smoothed = PreproObsData[PreproObsData[PreproIdx["STATUS"]] == 1]
+    # print("")
+    # print("Combined")
+    # print(PreproObsData.groupby(PreproIdx["SOD"])[PreproIdx["STATUS"]][86350].sum())
+    # print(gal_gps_smoothed.groupby(PreproIdx["SOD"])[PreproIdx["STATUS"]][86350].sum())
 
-    # # Continue with plotting using PlotConf
-    # generatePlot(PlotConf)
+    # Plot configurations for GPS and Galileo
+    PlotConfGalileo = {
+        "Type": "Lines",
+        "FigSize" : (10.4, 6.6),
+
+        "Title" : "Number of GAL Satellites from s6an on Year 24 DoY 011",
+        "yLabel" : "Number of Satellites",
+        "xLabel" : "Hour of DoY 011",
+
+        "xTicks": range(round(PreproObsDataGalileo[PreproIdx["SOD"]].min() / GnssConstants.S_IN_H), round(PreproObsDataGalileo[PreproIdx["SOD"]].max() / GnssConstants.S_IN_H) + 1),
+        "xLim" : [round(PreproObsDataGalileo[PreproIdx["SOD"]].min() / GnssConstants.S_IN_H), round(PreproObsDataGalileo[PreproIdx["SOD"]].max() / GnssConstants.S_IN_H)],
+
+        "yLim" : [0, 20],
+        "yTicks" : range(0, 20),
+
+        "Grid" : 1,
+        "c" : {0: "orange", 1: "green"},
+        "Marker" : "",
+        "LineWidth" : 1,
+        "LineStyle" : "-",
+
+        "Label" : {0: "RAW", 1: "SMOOTHED"},
+        "LabelLoc" : "upper left",
+        
+        "xData": {
+            0: unique(PreproObsDataGalileo[PreproIdx["SOD"]]) / GnssConstants.S_IN_H,
+            1: unique(galNumSat_smoothed[PreproIdx["SOD"]]) / GnssConstants.S_IN_H
+        },
+
+        "yData": {
+            0: PreproObsDataGalileo.groupby(PreproIdx["SOD"])[PreproIdx["STATUS"]].sum(),
+            1: galNumSat_smoothed.groupby(PreproIdx["SOD"])[PreproIdx["STATUS"]].sum()
+        },
+
+        "Path": sys.argv[1] + '/OUT/PPVE/SAT/' + 'NUMBER_OF_GAL_SATELLITES_s6an_D011Y24.png',
+    }
+
+    PlotConfGPS = {
+        "Type": "Lines",
+        "FigSize" : (10.4, 6.6),
+
+        "Title" : "Number of GPS Satellites from s6an on Year 24 DoY 011",
+        "yLabel" : "Number of Satellites",
+        "xLabel" : "Hour of DoY 011",
+
+        "xTicks": range(round(PreproObsDataGPS[PreproIdx["SOD"]].min() / GnssConstants.S_IN_H), round(PreproObsDataGPS[PreproIdx["SOD"]].max() / GnssConstants.S_IN_H) + 1),
+        "xLim" : [round(PreproObsDataGPS[PreproIdx["SOD"]].min() / GnssConstants.S_IN_H), round(PreproObsDataGPS[PreproIdx["SOD"]].max() / GnssConstants.S_IN_H)],
+
+        "yLim" : [0, 20],
+        "yTicks" : range(0, 20),
+
+        "Grid" : 1,
+        "c" : {0: "orange", 1: "green"},
+        "Marker" : "",
+        "LineWidth" : 1,
+        "LineStyle" : "-",
+
+        "Label" : {0: "RAW", 1: "SMOOTHED"},
+        "LabelLoc" : "upper left",
+        
+        "xData": {
+            0: unique(PreproObsDataGPS[PreproIdx["SOD"]]) / GnssConstants.S_IN_H,
+            1: unique(gpsNumSat_smoothed[PreproIdx["SOD"]]) / GnssConstants.S_IN_H
+        },
+
+        "yData": {
+            0: PreproObsDataGPS.groupby(PreproIdx["SOD"])[PreproIdx["STATUS"]].sum(),
+            1: gpsNumSat_smoothed.groupby(PreproIdx["SOD"])[PreproIdx["STATUS"]].sum()
+        },
+
+        "Path": sys.argv[1] + '/OUT/PPVE/SAT/' + 'NUMBER_OF_GPS_SATELLITES_s6an_D011Y24.png',
+    }
+
+    PlotConf = {
+        "Type": "Lines",
+        "FigSize" : (10.4, 6.6),
+
+        "Title" : "Number of GPS+GAL from s6an on Year 24 DoY 011",
+        "yLabel" : "Number of Satellites",
+        "xLabel" : "Hour of DoY 011",
+
+        "xTicks": range(round(PreproObsData[PreproIdx["SOD"]].min() / GnssConstants.S_IN_H), round(PreproObsData[PreproIdx["SOD"]].max() / GnssConstants.S_IN_H) + 1),
+        "xLim" : [round(PreproObsData[PreproIdx["SOD"]].min() / GnssConstants.S_IN_H), round(PreproObsData[PreproIdx["SOD"]].max() / GnssConstants.S_IN_H)],
+
+        "yLim" : [0, 20],
+        "yTicks" : range(0, 20),
+
+        "Grid" : 1,
+        "c" : {0: "orange", 1: "green"},
+        "Marker" : "",
+        "LineWidth" : 1,
+        "LineStyle" : "-",
+
+        "Label" : {0: "RAW", 1: "SMOOTHED"},
+        "LabelLoc" : "upper left",
+
+        "xData": {
+            0: unique(PreproObsData[PreproIdx["SOD"]]) / GnssConstants.S_IN_H,
+            1: unique(gal_gps_smoothed[PreproIdx["SOD"]]) / GnssConstants.S_IN_H
+        },
+
+        "yData": {
+            0: PreproObsData.groupby(PreproIdx["SOD"])[PreproIdx["STATUS"]].sum(),
+            1: gal_gps_smoothed.groupby(PreproIdx["SOD"])[PreproIdx["STATUS"]].sum()
+        },
+
+        "Path": sys.argv[1] + '/OUT/PPVE/SAT/' + 'NUMBER_OF_GPS+GAL_SATELLITES_s6an_D011Y24.png',
+
+    }
+
+    data_array = [PlotConfGalileo, PlotConfGPS, PlotConf]
+
+    for conf in data_array:
+        generatePlot(conf)
+
 
 # Plot Code IF - Code IF Smoothed
 def plotIFIFSmoothed(PreproObsFile, PreproObsData):
@@ -179,8 +269,96 @@ def plotCN0(PreproObsFile, PreproObsData, PlotTitle, PlotLabel):
 
 # Plot Rejection Flags
 def plotRejectionFlags(PreproObsFile, PreproObsData):
-    PlotConf = {}
+    all_prns = allprns()
 
+    gal_prn = [int(convert_satlabel_to_prn(const)) for const, _ in all_prns.items() if const.startswith("E")]
+    gps_prn = [int(convert_satlabel_to_prn(const)) for const, _ in all_prns.items() if const.startswith("G")]
+
+    PreproObsDataGalileo = PreproObsData[(PreproObsData[PreproIdx["PRN"]].str.startswith("E") & (PreproObsData[PreproIdx["REJECT"]] != 0))]
+    PreproObsDataGPS =     PreproObsData[(PreproObsData[PreproIdx["PRN"]].str.startswith("G") & (PreproObsData[PreproIdx["REJECT"]] != 0))]
+
+    PlotConfGalileo = {
+        "Type": "Lines",
+        "FigSize" : (10.4, 6.6),
+
+        "Title" : "GAL Rejection Flags from s6an on Year 24 DoY 011",
+        "yLabel" : "GAL Rejection Flags",
+        "xLabel" : "Hour of DoY 011",
+
+        "xTicks": range(int(round(PreproObsDataGalileo[PreproIdx["SOD"]].min() / GnssConstants.S_IN_H)), int(round(PreproObsDataGalileo[PreproIdx["SOD"]].max() / GnssConstants.S_IN_H)) + 1),
+        "xLim" : [int(round(PreproObsDataGalileo[PreproIdx["SOD"]].min() / GnssConstants.S_IN_H)), int(round(PreproObsDataGalileo[PreproIdx["SOD"]].max() / GnssConstants.S_IN_H))],
+
+        "yLim" : [0, len(REJECTION_CAUSE_DESC.keys()) + 1],
+        "yTicks" : range(1, len(REJECTION_CAUSE_DESC.keys()) + 1 ),
+        "yTicksLabels" : REJECTION_CAUSE_DESC.keys(), 
+
+        "Marker" : ".",
+        "LineWidth" : 0,
+        "Grid" : 1,
+
+        "ColorBar" : "gist_ncar",
+        "ColorBarLabel" : "Galileo PRN",
+        "ColorBarMin" : min(gal_prn),
+        "ColorBarMax" : max(gal_prn),
+        "ColorBarSetTicks": sorted(gal_prn),
+        "ColoBarBins": len(gal_prn), 
+
+        "s" : 20, 
+        "Label" : 0,
+        
+        "Annotations": {0: PreproObsDataGalileo[PreproIdx["PRN"]]},
+
+        "xData": {0: unique(PreproObsDataGalileo[PreproIdx["SOD"]]) / GnssConstants.S_IN_H},
+        "yData": {0: PreproObsDataGalileo[PreproIdx["REJECT"]]},
+        "zData" : {0: [int(convert_satlabel_to_prn(prn)) for prn in PreproObsDataGalileo[PreproIdx["PRN"]]]}, 
+
+        "Path": sys.argv[1] + '/OUT/PPVE/SAT/' + 'GAL_REJECTION_FLAGS_s6an_D011Y24.png',
+    }
+
+    PlotConfGPS = {
+        "Type": "Lines",
+        "FigSize" : (10.4, 6.6),
+
+        "Title" : "GPS Rejection Flags from s6an on Year 24 DoY 011",
+        "yLabel" : "GPS Rejection Flags",
+        "xLabel" : "Hour of DoY 011",
+
+        "xTicks": range(int(round(PreproObsDataGPS[PreproIdx["SOD"]].min() / GnssConstants.S_IN_H)), int(round(PreproObsDataGPS[PreproIdx["SOD"]].max() / GnssConstants.S_IN_H)) + 1),
+        "xLim" : [int(round(PreproObsDataGPS[PreproIdx["SOD"]].min() / GnssConstants.S_IN_H)), int(round(PreproObsDataGPS[PreproIdx["SOD"]].max() / GnssConstants.S_IN_H))],
+
+        "yLim" : [0, len(REJECTION_CAUSE_DESC.keys()) + 1],
+        "yTicks" : range(1, len(REJECTION_CAUSE_DESC.keys()) + 1),
+        "yTicksLabels" : REJECTION_CAUSE_DESC.keys(), 
+
+        "Marker" : ".",
+        "LineWidth" : 0,
+        "Grid" : 1,
+
+        "ColorBar" : "gist_ncar",
+        "ColorBarLabel" : "GPS PRN",
+        "ColorBarMin" : min(gps_prn),
+        "ColorBarMax" : max(gps_prn),
+        "ColorBarSetTicks": sorted(gps_prn),
+        "ColoBarBins": len(gps_prn), 
+
+        "s" : 20, 
+        "Label" : 0,
+        
+        "Annotations": {0: PreproObsDataGPS[PreproIdx["PRN"]]},
+
+        "xData": {0: PreproObsDataGPS[PreproIdx["SOD"]] / GnssConstants.S_IN_H},
+        "yData": {0: PreproObsDataGPS[PreproIdx["REJECT"]]},
+        "zData" : {0: [int(convert_satlabel_to_prn(prn)) for prn in PreproObsDataGPS[PreproIdx["PRN"]]]}, 
+
+        "Path": sys.argv[1] + '/OUT/PPVE/SAT/' + 'GPS_REJECTION_FLAGS_s6an_D011Y24.png',
+    }
+
+    all_confs = [PlotConfGalileo, PlotConfGPS]
+
+    for conf in all_confs:
+        generatePlot(conf)
+
+    # generatePlot(PlotConfGalileo)
 
 # Plot Rates
 def plotRates(PreproObsFile, PreproObsData, PlotTitle, PlotLabel):
@@ -204,6 +382,7 @@ def generatePreproPlots(PreproObsFile):
     # Satellite Visibility
     # ----------------------------------------------------------
     # Read the cols we need from PREPRO OBS file
+    PreproObsData_test = read_csv(PreproObsFile, delim_whitespace=True, skiprows=1, header=None)
     PreproObsData = read_csv(PreproObsFile, delim_whitespace=True, skiprows=1, header=None,\
     usecols=[PreproIdx["SOD"],PreproIdx["PRN"],PreproIdx["STATUS"],PreproIdx["ELEV"]])
     

@@ -119,12 +119,25 @@ def prepareColorBar(PlotConf, ax, Values, scatter = None):
             Maxs.append(max(v))
         Max = max(Maxs)
 
-    normalize = mpl.cm.colors.Normalize(vmin=Min, vmax=Max)
     divider = make_axes_locatable(ax) 
-    color_ax = divider.append_axes("right", size="3%", pad="2%")        
+    color_ax = divider.append_axes("right", size="3%", pad="2%")
     cmap = mpl.cm.get_cmap(PlotConf["ColorBar"])
-    cbar = mpl.colorbar.ColorbarBase(color_ax, cmap=cmap, norm=mpl.colors.Normalize(vmin=Min, vmax=Max),
-    label=PlotConf["ColorBarLabel"])
+
+    try: 
+        num_bins = PlotConf["ColorBarBins"]
+        bounds = np.linspace(Min, Max, num_bins + 1)
+        normalize = mpl.colors.BoundaryNorm(bounds, cmap.N)
+        cbar = mpl.colorbar.ColorbarBase(color_ax, cmap=cmap, norm=normalize,
+                                         label=PlotConf["ColorBarLabel"],
+                                         boundaries=bounds,
+                                         ticks=np.linspace(Min, Max, num_bins))
+    except:
+        # Handle the case where ColorBarBins is not provided or other KeyError
+        normalize = mpl.cm.colors.Normalize(vmin=Min, vmax=Max)
+    
+        # Create a continuous colorbar
+        cbar = mpl.colorbar.ColorbarBase(color_ax, cmap=cmap, norm=normalize,
+                                     label=PlotConf["ColorBarLabel"])
     
     try:
     #  PlotConf["ColorBarSetTicks"]:
@@ -222,24 +235,44 @@ def generateLinesPlot(PlotConf):
         print(" No multiaxes detected ... \n")
 
     for Label in PlotConf["yData"].keys():
+        x_lim = ax.get_xlim()
+        # y_lim = ax.get_ylim()
         if "ColorBar" in PlotConf:
             colors = cmap(normalize(np.array(PlotConf["zData"][Label])))
 
-            flags = PlotConf["Flags"][Label]
-            # Apply grey where flag is 1
-            colors[flags != 1] = mpl.colors.to_rgba("gray")
-            
+            if "Flags" in PlotConf:
+                flags = PlotConf["Flags"][Label]
+                # Apply grey where flag is 1
+                colors[flags != 1] = mpl.colors.to_rgba("gray")
+            else:
+                pass
+                  
             try:
                 ax.scatter(PlotConf["xData"][Label], PlotConf["yData"][Label], 
                 marker = PlotConf["Marker"],
                 linewidth = LineWidth,
                 s = PlotConf['s'],
-                c = colors)
+                c = colors, 
+                zorder=1)
+    
+                if "Annotations" in PlotConf and Label in PlotConf["Annotations"]:
+                    x_data = np.array(PlotConf["xData"][Label])
+                    y_data = np.array(PlotConf["yData"][Label])
+                    annotations = np.array(PlotConf["Annotations"][Label])
+
+                    for i, text in enumerate(annotations):
+                        text_color = colors[i][:3]
+                        ax.annotate(text, (x_data[i], y_data[i]), fontsize=5, ha='center', va="top",  color=text_color, xytext=(0, -5), textcoords='offset points')
+                
+                else:
+                    pass
+
             except:
                 ax.scatter(PlotConf["xData"][Label], PlotConf["yData"][Label], 
                 marker = PlotConf["Marker"],
                 linewidth = LineWidth,
-                c = colors)
+                c = colors,
+                zorder=1)
 
         else:
             if Label == 0 and ax2: 
