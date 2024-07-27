@@ -235,8 +235,6 @@ def generateLinesPlot(PlotConf):
         print(" No multiaxes detected ... \n")
 
     for Label in PlotConf["yData"].keys():
-        x_lim = ax.get_xlim()
-        # y_lim = ax.get_ylim()
         if "ColorBar" in PlotConf:
             colors = cmap(normalize(np.array(PlotConf["zData"][Label])))
 
@@ -262,8 +260,14 @@ def generateLinesPlot(PlotConf):
 
                     for i, text in enumerate(annotations):
                         text_color = colors[i][:3]
-                        ax.annotate(text, (x_data[i], y_data[i]), fontsize=5, ha='center', va="top",  color=text_color, xytext=(0, -5), textcoords='offset points')
-                
+
+                        # Alternating Offsets
+                        if i %2 ==0:
+                            offset = 5
+                        else:
+                            offset = -5
+
+                        ax.annotate(text, (x_data[i], y_data[i]), fontsize=5, ha='center', va="top",  color=text_color, xytext=(0, offset), textcoords='offset points')
                 else:
                     pass
 

@@ -46,7 +46,7 @@ def initPlot(PreproObsFile, PlotConf, Title, Label):
     PlotConf["Title"] = "%s from %s on Year %s"\
         " DoY %s" % (Title, Rcvr, Year, Doy)
 
-    PlotConf["Path"] = sys.argv[1] + '/OUT/PPVE/figures/' + \
+    PlotConf["Path"] = sys.argv[1] + '/OUT/PPVE/SAT/' + \
         '%s_%s_Y%sD%s.png' % (Label, Rcvr, Year, Doy)
     
     return PlotConf
@@ -123,25 +123,12 @@ def plotNumSats(PreproObsFile, PreproObsData):
 
     PreproObsDataGalileo = PreproObsData[PreproObsData[PreproIdx["PRN"]].str.startswith("E")]
     galNumSat_smoothed = PreproObsDataGalileo[PreproObsData[PreproIdx["STATUS"]] == 1]
-    # print("")
-    # print("GAL")
-    # print(PreproObsDataGalileo.groupby(PreproIdx["SOD"])[PreproIdx["STATUS"]][86350].sum())
-    # print(galNumSat_smoothed.groupby(PreproIdx["SOD"])[PreproIdx["STATUS"]][86350].sum())
 
     PreproObsDataGPS = PreproObsData[PreproObsData[PreproIdx["PRN"]].str.startswith("G")]
     gpsNumSat_smoothed = PreproObsDataGPS[PreproObsDataGPS[PreproIdx["STATUS"]] == 1]
-    # print("")
-    # print("GPS")
-    # print(PreproObsDataGPS.groupby(PreproIdx["SOD"])[PreproIdx["STATUS"]][86350].sum())
-    # print(gpsNumSat_smoothed.groupby(PreproIdx["SOD"])[PreproIdx["STATUS"]][86350].sum())
-    
-    gal_gps_smoothed = PreproObsData[PreproObsData[PreproIdx["STATUS"]] == 1]
-    # print("")
-    # print("Combined")
-    # print(PreproObsData.groupby(PreproIdx["SOD"])[PreproIdx["STATUS"]][86350].sum())
-    # print(gal_gps_smoothed.groupby(PreproIdx["SOD"])[PreproIdx["STATUS"]][86350].sum())
 
-    # Plot configurations for GPS and Galileo
+    gal_gps_smoothed = PreproObsData[PreproObsData[PreproIdx["STATUS"]] == 1]
+
     PlotConfGalileo = {
         "Type": "Lines",
         "FigSize" : (10.4, 6.6),
@@ -259,12 +246,301 @@ def plotNumSats(PreproObsFile, PreproObsData):
 
 # Plot Code IF - Code IF Smoothed
 def plotIFIFSmoothed(PreproObsFile, PreproObsData):
-    PlotConf = {}
+
+    PreproObsDataGalileo = PreproObsData[PreproObsData[PreproIdx["PRN"]].str.startswith("E")]
+    PreproObsDataGPS = PreproObsData[PreproObsData[PreproIdx["PRN"]].str.startswith("G")]
+
+    # GALILEO data
+    min_val_gal = int(min(PreproObsDataGalileo[PreproIdx["CODE_IF"]] - PreproObsDataGalileo[PreproIdx["SMOOTH_IF"]]))
+    max_val_gal = int(max(PreproObsDataGalileo[PreproIdx["CODE_IF"]] - PreproObsDataGalileo[PreproIdx["SMOOTH_IF"]]))
+
+    # GPS data
+    min_val_gps = int(min(PreproObsDataGPS[PreproIdx["CODE_IF"]] - PreproObsDataGPS[PreproIdx["SMOOTH_IF"]]))
+    max_val_gps = int(max(PreproObsDataGPS[PreproIdx["CODE_IF"]] - PreproObsDataGPS[PreproIdx["SMOOTH_IF"]]))
+
+    PlotConfGalileo = {
+        "Type": "Lines",
+        "FigSize" : (8.4, 6.6),
+
+        "Title" : "GAL Code IF - Code IF Smoothed from s6an on Year 24 DoY 011",
+        "yLabel" : "GAL Code IF - Code IF Smoothed [m]",
+        "xLabel" : "Hour of DoY 011",
+
+        "xTicks": range(round(PreproObsDataGalileo[PreproIdx["SOD"]].min() / GnssConstants.S_IN_H), round(PreproObsDataGalileo[PreproIdx["SOD"]].max() / GnssConstants.S_IN_H) + 1),
+        "xLim" : [round(PreproObsDataGalileo[PreproIdx["SOD"]].min() / GnssConstants.S_IN_H), round(PreproObsDataGalileo[PreproIdx["SOD"]].max() / GnssConstants.S_IN_H)],
+
+        "yLim" : [-2, 2],
+        "yTicks" : range(-2, 3),
+
+        "Grid" : 1,
+        
+        "Marker" : ".",
+        "LineWidth" : 0,
+
+        "ColorBar": "gnuplot",
+        "ColorBarLabel": "Elevation [deg]",
+        "ColorBarMin" : 0,
+        "ColorBarMax" : 90,
+        
+        "s" : 20,
+        
+        "Label" : {0},
+        
+        "xData": {
+            0: PreproObsDataGalileo[PreproIdx["SOD"]] / GnssConstants.S_IN_H,
+        },
+
+        "yData": {
+            0: PreproObsDataGalileo[PreproIdx["CODE_IF"]] - PreproObsDataGalileo[PreproIdx["SMOOTH_IF"]],  
+        },
+
+        "zData":{
+            0: PreproObsDataGalileo[PreproIdx["ELEV"]],                            
+        },
+
+        "Flags":{
+            0: PreproObsDataGalileo[PreproIdx["STATUS"]],
+        },
+
+        "Path": sys.argv[1] + '/OUT/PPVE/SAT/' + 'GAL_CODEIF_SMOOTHEDIF_s6an_D011Y24.png',
+    }
+
+    PlotConfGPS = {
+        "Type": "Lines",
+        "FigSize" : (8.4, 6.6),
+
+        "Title" : "GPS Code IF - Code IF Smoothed from s6an on Year 24 DoY 011",
+        "yLabel" : "GPS Code IF - Code IF Smoothed [m]",
+        "xLabel" : "Hour of DoY 011",
+
+        "xTicks": range(round(PreproObsDataGPS[PreproIdx["SOD"]].min() / GnssConstants.S_IN_H), round(PreproObsDataGPS[PreproIdx["SOD"]].max() / GnssConstants.S_IN_H) + 1),
+        "xLim" : [round(PreproObsDataGPS[PreproIdx["SOD"]].min() / GnssConstants.S_IN_H), round(PreproObsDataGPS[PreproIdx["SOD"]].max() / GnssConstants.S_IN_H)],
+
+        "yLim": [-4 , 4],
+        "yTicks" : range(-4, 5),
+
+        "Grid" : 1,
+        
+        "Marker" : ".",
+        "LineWidth" : 0,
+
+        "ColorBar": "gnuplot",
+        "ColorBarLabel": "Elevation [deg]",
+        "ColorBarMin" : 0,
+        "ColorBarMax" : 90,
+        
+        "s" : 20,
+        
+        "Label" : {0},
+        
+        "xData": {
+            0: PreproObsDataGPS[PreproIdx["SOD"]] / GnssConstants.S_IN_H,
+        },
+
+        "yData": {
+            0: PreproObsDataGPS[PreproIdx["CODE_IF"]] - PreproObsDataGPS[PreproIdx["SMOOTH_IF"]], 
+        },
+
+        "zData":{
+            0: PreproObsDataGPS[PreproIdx["ELEV"]],                            
+        },
+
+        "Flags":{
+            0: PreproObsDataGPS[PreproIdx["STATUS"]],
+        },
+
+        "Path": sys.argv[1] + '/OUT/PPVE/SAT/' + 'GPS_CODEIF_SMOOTHEDIF_s6an_D011Y24.png',
+    }
+
+    all_confs = [PlotConfGalileo, PlotConfGPS]
+
+    for conf in all_confs:
+        generatePlot(conf)
+
 
 
 # Plot C/N0
 def plotCN0(PreproObsFile, PreproObsData, PlotTitle, PlotLabel):
-    PlotConf = {}
+
+    if PlotTitle == "CN0_F1" or  PlotLabel == "S1":
+        
+        PreproObsDataGalileo = PreproObsData[PreproObsData[PreproIdx["PRN"]].str.startswith("E") & PreproObsData[PreproIdx["S1"]]]
+        PreproObsDataGPS = PreproObsData[PreproObsData[PreproIdx["PRN"]].str.startswith("G") & PreproObsData[PreproIdx["S1"]]]
+
+        PlotConfGalileo = {
+            "Type": "Lines",
+            "FigSize" : (8.4, 6.6),
+
+            "yLabel" : "GAL CN0_F1 [m/2]",
+
+            "xTicks": range(round(PreproObsDataGalileo[PreproIdx["SOD"]].min() / GnssConstants.S_IN_H), round(PreproObsDataGalileo[PreproIdx["SOD"]].max() / GnssConstants.S_IN_H) + 1),
+            "xLim" : [round(PreproObsDataGalileo[PreproIdx["SOD"]].min() / GnssConstants.S_IN_H), round(PreproObsDataGalileo[PreproIdx["SOD"]].max() / GnssConstants.S_IN_H)],
+
+            "yLim" : [PreproObsDataGalileo[PreproIdx["S1"]].min(), PreproObsDataGalileo[PreproIdx["S1"]].max() + 1],
+            "yTicks" : range(int(PreproObsDataGalileo[PreproIdx["S1"]].min()) -5, int(PreproObsDataGalileo[PreproIdx["S1"]].max()) + 5, 5),
+
+            "Grid" : 1,
+            
+            "Marker" : "|",
+            "LineWidth" : 1,
+
+            "s": 1.5,
+
+            "ColorBar": "gnuplot",
+            "ColorBarLabel": "Elevation [deg]",
+            "ColorBarMin" : 0,
+            "ColorBarMax" : 90,
+            
+            "Label" : {0},
+            
+            "xData": {
+                0: PreproObsDataGalileo[PreproIdx["SOD"]] / GnssConstants.S_IN_H,
+            },
+
+            "yData": {
+                0: PreproObsDataGalileo[PreproIdx["S1"]],  
+            },
+
+            "zData":{
+                0: PreproObsDataGalileo[PreproIdx["ELEV"]],                            
+            },
+        }
+
+        PlotConfGalileo = initPlot(PreproObsFile, PlotConfGalileo, "GAL " + PlotTitle, "GAL " + PlotLabel)
+        
+        PlotConfGPS = {
+            "Type": "Lines",
+            "FigSize" : (8.4, 6.6),
+
+            "yLabel" : "GPS CN0_F1 [m/2]",
+
+            "xTicks": range(round(PreproObsDataGPS[PreproIdx["SOD"]].min() / GnssConstants.S_IN_H), round(PreproObsDataGPS[PreproIdx["SOD"]].max() / GnssConstants.S_IN_H) + 1),
+            "xLim" : [round(PreproObsDataGPS[PreproIdx["SOD"]].min() / GnssConstants.S_IN_H), round(PreproObsDataGPS[PreproIdx["SOD"]].max() / GnssConstants.S_IN_H)],
+
+            "yLim" : [PreproObsDataGPS[PreproIdx["S1"]].min(), PreproObsDataGPS[PreproIdx["S1"]].max() + 1],
+            "yTicks" : range(int(PreproObsDataGPS[PreproIdx["S1"]].min()) -5, int(PreproObsDataGPS[PreproIdx["S1"]].max()) + 5, 5),
+
+            "Grid" : 1,
+            
+            "Marker" : ".",
+            "LineWidth" : 1,
+            "s": 1.5,
+
+            "ColorBar": "gnuplot",
+            "ColorBarLabel": "Elevation [deg]",
+            "ColorBarMin" : 0,
+            "ColorBarMax" : 90,
+            
+            "Label" : {0},
+            
+            "xData": {
+                0: PreproObsDataGPS[PreproIdx["SOD"]] / GnssConstants.S_IN_H,
+            },
+
+            "yData": {
+                0: PreproObsDataGPS[PreproIdx["S1"]],  
+            },
+
+            "zData":{
+                0: PreproObsDataGPS[PreproIdx["ELEV"]],                            
+            },
+        }
+
+        PlotConfGPS = initPlot(PreproObsFile, PlotConfGPS, "GPS " + PlotTitle, "GPS " + PlotLabel)
+
+        all_confs = [PlotConfGalileo, PlotConfGPS]
+
+        for conf in all_confs:
+            generatePlot(conf)
+
+    elif PlotTitle == "CN0_F2" or  PlotLabel == "S2":
+
+        PreproObsDataGalileo = PreproObsData[PreproObsData[PreproIdx["PRN"]].str.startswith("E") & PreproObsData[PreproIdx["S2"]]]
+        PreproObsDataGPS = PreproObsData[PreproObsData[PreproIdx["PRN"]].str.startswith("G") & PreproObsData[PreproIdx["S2"]]]
+
+        PlotConfGalileo = {
+            "Type": "Lines",
+            "FigSize" : (8.4, 6.6),
+
+            "yLabel" : "GAL CN0_F2 [m/2]",
+
+            "xTicks": range(round(PreproObsDataGalileo[PreproIdx["SOD"]].min() / GnssConstants.S_IN_H), round(PreproObsDataGalileo[PreproIdx["SOD"]].max() / GnssConstants.S_IN_H) + 1),
+            "xLim" : [round(PreproObsDataGalileo[PreproIdx["SOD"]].min() / GnssConstants.S_IN_H), round(PreproObsDataGalileo[PreproIdx["SOD"]].max() / GnssConstants.S_IN_H)],
+
+            "yLim" : [PreproObsDataGalileo[PreproIdx["S2"]].min(), PreproObsDataGalileo[PreproIdx["S2"]].max() + 1],
+            "yTicks" : range(int(PreproObsDataGalileo[PreproIdx["S2"]].min()) -5, int(PreproObsDataGalileo[PreproIdx["S2"]].max()) + 5, 5),
+
+            "Grid" : 1,
+            
+            "Marker" : ".",
+            "LineWidth" : 1,
+            "s": 1.5,
+
+            "ColorBar": "gnuplot",
+            "ColorBarLabel": "Elevation [deg]",
+            "ColorBarMin" : 0,
+            "ColorBarMax" : 90,
+            
+            "Label" : {0},
+            
+            "xData": {
+                0: PreproObsDataGalileo[PreproIdx["SOD"]] / GnssConstants.S_IN_H,
+            },
+
+            "yData": {
+                0: PreproObsDataGalileo[PreproIdx["S2"]],  
+            },
+
+            "zData":{
+                0: PreproObsDataGalileo[PreproIdx["ELEV"]],                            
+            },
+        }
+        PlotConfGalileo = initPlot(PreproObsFile, PlotConfGalileo, "GAL " + PlotTitle, "GAL " + PlotLabel)
+
+        PlotConfGPS = {
+            "Type": "Lines",
+            "FigSize" : (8.4, 6.6),
+
+            "yLabel" : "GPS CN0_F2 [m/2]",
+
+            "xTicks": range(round(PreproObsDataGPS[PreproIdx["SOD"]].min() / GnssConstants.S_IN_H), round(PreproObsDataGPS[PreproIdx["SOD"]].max() / GnssConstants.S_IN_H) + 1),
+            "xLim" : [round(PreproObsDataGPS[PreproIdx["SOD"]].min() / GnssConstants.S_IN_H), round(PreproObsDataGPS[PreproIdx["SOD"]].max() / GnssConstants.S_IN_H)],
+
+            "yLim" : [PreproObsDataGPS[PreproIdx["S2"]].min(), PreproObsDataGPS[PreproIdx["S2"]].max() + 1],
+            "yTicks" : range(int(PreproObsDataGPS[PreproIdx["S2"]].min()) -5, int(PreproObsDataGPS[PreproIdx["S2"]].max()) + 5, 5),
+
+            "Grid" : 1,
+            
+            "Marker" : ".",
+            "LineWidth" : 1,
+            "s": 1.5,
+
+            "ColorBar": "gnuplot",
+            "ColorBarLabel": "Elevation [deg]",
+            "ColorBarMin" : 0,
+            "ColorBarMax" : 90,
+            
+            "Label" : {0},
+            
+            "xData": {
+                0: PreproObsDataGPS[PreproIdx["SOD"]] / GnssConstants.S_IN_H,
+            },
+
+            "yData": {
+                0: PreproObsDataGPS[PreproIdx["S2"]],  
+            },
+
+            "zData":{
+                0: PreproObsDataGPS[PreproIdx["ELEV"]],                            
+            },
+        }
+
+        PlotConfGPS = initPlot(PreproObsFile, PlotConfGPS, "GPS " + PlotTitle, "GPS " + PlotLabel)
+
+        all_confs = [PlotConfGalileo, PlotConfGPS]
+
+        for conf in all_confs:
+            generatePlot(conf)
 
 
 # Plot Rejection Flags
@@ -303,7 +579,7 @@ def plotRejectionFlags(PreproObsFile, PreproObsData):
         "ColorBarSetTicks": sorted(gal_prn),
         "ColoBarBins": len(gal_prn), 
 
-        "s" : 20, 
+        "s" : 100, 
         "Label" : 0,
         
         "Annotations": {0: PreproObsDataGalileo[PreproIdx["PRN"]]},
@@ -341,7 +617,7 @@ def plotRejectionFlags(PreproObsFile, PreproObsData):
         "ColorBarSetTicks": sorted(gps_prn),
         "ColoBarBins": len(gps_prn), 
 
-        "s" : 20, 
+        "s" : 100, 
         "Label" : 0,
         
         "Annotations": {0: PreproObsDataGPS[PreproIdx["PRN"]]},

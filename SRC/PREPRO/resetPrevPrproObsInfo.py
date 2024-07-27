@@ -5,6 +5,8 @@ def resetPrevPreproObsInfo(Conf, PreproObs):
     return {
                 "PrevEpoch": PreproObs["Sod"],                               # Previous SoD
 
+                "PrevElev": [Const.NAN] * 2,                                 # Previous two elevations
+
                 "ResetHatchFilter": 1,                                       # Flag to reset Hatch filter
                 "Ksmooth": 0,                                                # Hatch filter K
                 "PrevSmooth": 0,                                             # Previous Smooth Observable

@@ -133,6 +133,8 @@ for Jd in range(Conf["INI_DATE_JD"], Conf["END_DATE_JD"] + 1):
             PrevPreproObsInfo["%s%02d" % (const,prn)] = {
                 "PrevEpoch": 86400,                                          # Previous SoD
 
+                "PrevElev": [Const.NAN] * 2,                                 # Previous two elevations
+
                 "ResetHatchFilter": 1,                                       # Flag to reset Hatch filter
                 "Ksmooth": 0,                                                # Hatch filter K
                 "PrevSmooth": 0,                                             # Previous Smooth Observable

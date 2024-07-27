@@ -266,7 +266,16 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
         if PreproObs["Sod"] - PrevPreproObsInfo[SatLabel]["PrevEpoch"] > Conf["MAX_DATA_GAP"][1]:
             if Conf["MAX_DATA_GAP"][0] == 1 and (PreproObs["Sod"] - PrevPreproObsInfo[SatLabel]["PrevEpoch"]) < 1000:
                 PreproObs = rejectMeasurement(PreproObs, "MAX_DATA_GAP")
+                PrevPreproObsInfo[SatLabel]["PrevElev"][0] = PrevPreproObsInfo[SatLabel]["PrevElev"][1]
+                PrevPreproObsInfo[SatLabel]["PrevElev"][1] = PreproObs["Elevation"]
             PrevPreproObsInfo[SatLabel] = resetPrevPreproObsInfo(Conf, PreproObs)
+        
+        # if PreproObs["Sod"] - PrevPreproObsInfo[SatLabel]["PrevEpoch"] > Conf["MAX_DATA_GAP"][1]:
+        #     if Conf["MAX_DATA_GAP"][0] == 1 and (PrevPreproObsInfo[SatLabel]["PrevElev"][0] != Const.NAN) and (PrevPreproObsInfo[SatLabel]["PrevElev"][1] != Const.NAN):
+        #         PreproObs = rejectMeasurement(PreproObs, "MAX_DATA_GAP")
+        #         PrevPreproObsInfo[SatLabel]["PrevElev"][0] = PrevPreproObsInfo[SatLabel]["PrevElev"][1]
+        #         PrevPreproObsInfo[SatLabel]["PrevElev"][1] = PreproObs["Elevation"]
+        #     PrevPreproObsInfo[SatLabel] = resetPrevPreproObsInfo(Conf, PreproObs)
 
 
         # Check Satellite Elevation Angle in front of the minimum by configuration
@@ -328,14 +337,12 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
             # End if PrevPreproObsInfo[SatLabel]["Ksmooth"] >= Conf["HATCH_TIME"]
         
             # CALL HATCH FILTER
-            # if (SmoothingTime > 0):
             Alpha = (PreproObs["Sod"] - PrevPreproObsInfo[SatLabel]["PrevEpoch"]) / SmoothingTime
             PreproObs["SmoothIF"] = Alpha * PreproObs["IF_C"] + (1 - Alpha) * (PrevPreproObsInfo[SatLabel]["PrevSmooth"] + (PreproObs["IF_P"] - PrevPreproObsInfo[SatLabel]["IF_P_Prev"]))
             
             PrevPreproObsInfo[SatLabel]["Ksmooth"] = PrevPreproObsInfo[SatLabel]["Ksmooth"] + (PreproObs["Sod"] - PrevPreproObsInfo[SatLabel]["PrevEpoch"])
             PrevPreproObsInfo[SatLabel]["PrevSmooth"] = PreproObs["SmoothIF"]
             PrevPreproObsInfo[SatLabel]["IF_P_Prev"] = PreproObs["IF_P"]
-            # End if (SmoothingTime > 0)
         # End if PrevPreproObsInfo[SatLabel]["ResetHatchFilter"] == 1
 
 
