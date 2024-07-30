@@ -26,10 +26,8 @@ sys.path.append(os.getcwd() + '/' + \
 from COMMON import GnssConstants
 import numpy as np
 from collections import OrderedDict
-from COMMON.missingPRNs import missing_prns_before
 from COMMON.Plots import generatePlot
 from COMMON.allPRNs import allprns
-from COMMON.dataDivider import dataDivider
 
 
 def initPlot(PreproObsFile, PlotConf, Title, Label):
@@ -120,15 +118,20 @@ def plotSatVisibility(PreproObsFile, PreproObsData):
 def plotNumSats(PreproObsFile, PreproObsData):
 
     # Divide data frame
-
     PreproObsDataGalileo = PreproObsData[PreproObsData[PreproIdx["PRN"]].str.startswith("E")]
-    galNumSat_smoothed = PreproObsDataGalileo[PreproObsData[PreproIdx["STATUS"]] == 1]
-
     PreproObsDataGPS = PreproObsData[PreproObsData[PreproIdx["PRN"]].str.startswith("G")]
-    gpsNumSat_smoothed = PreproObsDataGPS[PreproObsDataGPS[PreproIdx["STATUS"]] == 1]
 
-    gal_gps_smoothed = PreproObsData[PreproObsData[PreproIdx["STATUS"]] == 1]
+    # Raw data
+    # PreproObsDataGalileoRaw = PreproObsDataGalileo[PreproObsData[PreproIdx["STATUS"]] == 0]
+    # PreproObsDataGPSRaw = PreproObsDataGPS[PreproObsDataGPS[PreproIdx["STATUS"]] == 0]
+    # PreproObsDataRaw = PreproObsData[PreproObsData[PreproIdx["STATUS"]] == 0]
 
+    # Smoothed data
+    PreproObsDataGalileoSmoothed = PreproObsDataGalileo[PreproObsData[PreproIdx["STATUS"]] == 1]
+    PreproObsDataGPSSmoothed = PreproObsDataGPS[PreproObsDataGPS[PreproIdx["STATUS"]] == 1]
+    PreproObsDataSmoothed = PreproObsData[PreproObsData[PreproIdx["STATUS"]] == 1]
+
+    # Set Conf Dicts
     PlotConfGalileo = {
         "Type": "Lines",
         "FigSize" : (10.4, 6.6),
@@ -154,12 +157,12 @@ def plotNumSats(PreproObsFile, PreproObsData):
         
         "xData": {
             0: unique(PreproObsDataGalileo[PreproIdx["SOD"]]) / GnssConstants.S_IN_H,
-            1: unique(galNumSat_smoothed[PreproIdx["SOD"]]) / GnssConstants.S_IN_H
+            1: unique(PreproObsDataGalileoSmoothed[PreproIdx["SOD"]]) / GnssConstants.S_IN_H
         },
 
         "yData": {
-            0: PreproObsDataGalileo.groupby(PreproIdx["SOD"])[PreproIdx["STATUS"]].sum(),
-            1: galNumSat_smoothed.groupby(PreproIdx["SOD"])[PreproIdx["STATUS"]].sum()
+            0: PreproObsDataGalileo.groupby(PreproIdx["SOD"])[PreproIdx["STATUS"]].count(),
+            1: PreproObsDataGalileoSmoothed.groupby(PreproIdx["SOD"])[PreproIdx["STATUS"]].count()
         },
 
         "Path": sys.argv[1] + '/OUT/PPVE/SAT/' + 'NUMBER_OF_GAL_SATELLITES_s6an_D011Y24.png',
@@ -190,12 +193,12 @@ def plotNumSats(PreproObsFile, PreproObsData):
         
         "xData": {
             0: unique(PreproObsDataGPS[PreproIdx["SOD"]]) / GnssConstants.S_IN_H,
-            1: unique(gpsNumSat_smoothed[PreproIdx["SOD"]]) / GnssConstants.S_IN_H
+            1: unique(PreproObsDataGPSSmoothed[PreproIdx["SOD"]]) / GnssConstants.S_IN_H
         },
 
         "yData": {
-            0: PreproObsDataGPS.groupby(PreproIdx["SOD"])[PreproIdx["STATUS"]].sum(),
-            1: gpsNumSat_smoothed.groupby(PreproIdx["SOD"])[PreproIdx["STATUS"]].sum()
+            0: PreproObsDataGPS.groupby(PreproIdx["SOD"])[PreproIdx["STATUS"]].count(),
+            1: PreproObsDataGPSSmoothed.groupby(PreproIdx["SOD"])[PreproIdx["STATUS"]].count()
         },
 
         "Path": sys.argv[1] + '/OUT/PPVE/SAT/' + 'NUMBER_OF_GPS_SATELLITES_s6an_D011Y24.png',
@@ -226,12 +229,12 @@ def plotNumSats(PreproObsFile, PreproObsData):
 
         "xData": {
             0: unique(PreproObsData[PreproIdx["SOD"]]) / GnssConstants.S_IN_H,
-            1: unique(gal_gps_smoothed[PreproIdx["SOD"]]) / GnssConstants.S_IN_H
+            1: unique(PreproObsDataSmoothed[PreproIdx["SOD"]]) / GnssConstants.S_IN_H
         },
 
         "yData": {
-            0: PreproObsData.groupby(PreproIdx["SOD"])[PreproIdx["STATUS"]].sum(),
-            1: gal_gps_smoothed.groupby(PreproIdx["SOD"])[PreproIdx["STATUS"]].sum()
+            0: PreproObsData.groupby(PreproIdx["SOD"])[PreproIdx["STATUS"]].count(),
+            1: PreproObsDataSmoothed.groupby(PreproIdx["SOD"])[PreproIdx["STATUS"]].count()
         },
 
         "Path": sys.argv[1] + '/OUT/PPVE/SAT/' + 'NUMBER_OF_GPS+GAL_SATELLITES_s6an_D011Y24.png',
@@ -633,8 +636,6 @@ def plotRejectionFlags(PreproObsFile, PreproObsData):
 
     for conf in all_confs:
         generatePlot(conf)
-
-    # generatePlot(PlotConfGalileo)
 
 # Plot Rates
 def plotRates(PreproObsFile, PreproObsData, PlotTitle, PlotLabel):

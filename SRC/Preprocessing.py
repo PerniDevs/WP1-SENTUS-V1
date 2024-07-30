@@ -83,6 +83,9 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
     CodesObs = ObsInfo[0]
     PhaseObs = ObsInfo[1]
 
+    # Initialize output
+    PreproObsInfo = OrderedDict({})
+
     # CHALLENGE:
     # if check Cycle Slips activated
     if (Conf["CYCLE_SLIPS"][FLAG] == 1):
@@ -95,30 +98,60 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
             # Get satellite label
             SatLabel = SatPhaseObs[ObsIdxP["PRN"]]
             
-            
             # Compute Geometry-Free in cycles
             # The geometry free is the difference between Phase1 and Phase2 measurements
-            # GF = PrevPreproObsInfo[SatLabel]["GF_L_Prev"] - 
+            GF =  float(SatPhaseObs[ObsIdxP["L1"]]) - float(SatPhaseObs[ObsIdxP["L2"]])
 
-            if PrevPreproObsInfo[SatLabel]["CycleSlipBuffIdx"] == Conf["CYCLE_SLIPS"][3]:
-                pass
-            
-            # Check Data Gaps
-            # ...
+            # Check Data Gaps 
+            # If there is a data gap we need to reset the buffers 
+            if Sod - PrevPreproObsInfo[SatLabel]["GF_Epoch_Prev"][1] < Conf["MAX_DATA_GAP"][1]:
 
-            # Cycle slips detection
-            # fit a polynomial using previous GF measurements to compare the predicted value
-            # with the observed one
-            # --------------------------------------------------------------------------------------------------------------------
-            # ...
-            
+                # Cycle slips detection
+                if PrevPreproObsInfo[SatLabel]["CycleSlipBuffIdx"] == Conf["CYCLE_SLIPS"][3]:
+                    
+                    # Fit a polynomial using previous GF measurements to compare the predicted value
+                    # with the observed one
+                    # --------------------------------------------------------------------------------------------------------------------
+                    polynom = np.polynomial.polynomial.polyfit(PrevPreproObsInfo[SatLabel]["GF_Epoch_Prev"],
+                                                            PrevPreproObsInfo[SatLabel]["GF_L_Prev"], 
+                                                            int(Conf["CYCLE_SLIPS"][CSPDEGREE]))
+                    # Predict the next value
+                    targetPred = np.polynomial.polynomial.polyval(Sod, polynom)
 
+                    # Calculate the residual between the predicted and observed
+                    residual = abs(PrevPreproObsInfo[SatLabel]["GF_L_Prev"][0] - targetPred)
+
+                    # Compute CS flag
+                    PrevPreproObsInfo[SatLabel]["CycleSlipDetectFlag"] = 1 if residual > Conf["CYCLE_SLIPS"][1] else 0
+
+                    # Shift the buffer for CS flags and store last value as a detected flag
+                    # TODO: only set the buffer to 1 after 2nd epoch of the cycle slip, to do
+                    PrevPreproObsInfo[SatLabel]["CycleSlipFlags"][1:] = PrevPreproObsInfo[SatLabel]["CycleSlipFlags"][:-1]
+                    PrevPreproObsInfo[SatLabel]["CycleSlipFlags"][0] = PrevPreproObsInfo[SatLabel]["CycleSlipDetectFlag"] 
+
+                    # If CS is full then reject the measurement
+                    if sum(PrevPreproObsInfo[SatLabel]["CycleSlipFlags"]) == Conf["CYCLE_SLIPS"][2]:
+                        PreproObsInfo = rejectMeasurement(PreproObsInfo, "CYCLE_SLIPS")
+                        
+                        # Reset PrevpreproObsInfo dict to default values
+                        PrevPreproObsInfo[SatLabel]["CycleSlipBuffIdx"] = 0
+                        PrevPreproObsInfo[SatLabel]["CycleSlipFlagIdx"] = 0
+                        PrevPreproObsInfo[SatLabel]["GF_L_Prev"] = [0.0] * int(Conf["CYCLE_SLIPS"][CSNPOINTS])
+                        PrevPreproObsInfo[SatLabel]["GF_Epoch_Prev"] = [0.0] * int(Conf["CYCLE_SLIPS"][CSNPOINTS])
+                        PrevPreproObsInfo[SatLabel]["CycleSlipFlags"] = [0.0] * int(Conf["CYCLE_SLIPS"][CSNEPOCHS])
+                        PrevPreproObsInfo[SatLabel]["CycleSlipDetectFlag"] = 0
+
+            # Shift the buffer for GF and store last value
+            PrevPreproObsInfo[SatLabel]["GF_L_Prev"][1:] = PrevPreproObsInfo[SatLabel]["GF_L_Prev"][:-1]
+            PrevPreproObsInfo[SatLabel]["GF_L_Prev"][0] = GF
+
+            # Shift the buffer for SoD and store last value
+            PrevPreproObsInfo[SatLabel]["GF_Epoch_Prev"][1:] = PrevPreproObsInfo[SatLabel]["GF_Epoch_Prev"][:-1]
+            PrevPreproObsInfo[SatLabel]["GF_Epoch_Prev"][0] = Sod
+
+            PrevPreproObsInfo[SatLabel]["CycleSlipBuffIdx"] = PrevPreproObsInfo[SatLabel]["CycleSlipBuffIdx"] + 1
         # end of for iObs, SatPhaseObs in enumerate(PhaseObs):
-
     # End of if (Conf["CYCLE_SLIPS"][FLAG] == 1)
-
-    # Initialize output
-    PreproObsInfo = OrderedDict({})
 
     # Loop over Code measurements
     for iObs, SatCodesObs in enumerate(CodesObs):

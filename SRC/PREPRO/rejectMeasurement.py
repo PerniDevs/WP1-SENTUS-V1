@@ -42,4 +42,7 @@ def rejectMeasurement(PreproObs, Criterion):
     elif Criterion == "MAX_RANGE_RATE_STEP_F2":
         PreproObs["RejectionCause"] = 14
 
+    elif Criterion == "CYCLE_SLIPS":
+        PreproObs["RejectionCause"] = 15
+
     return PreproObs
