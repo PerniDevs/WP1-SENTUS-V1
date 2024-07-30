@@ -118,13 +118,9 @@ def plotSatVisibility(PreproObsFile, PreproObsData):
 def plotNumSats(PreproObsFile, PreproObsData):
 
     # Divide data frame
+    # Raw Data
     PreproObsDataGalileo = PreproObsData[PreproObsData[PreproIdx["PRN"]].str.startswith("E")]
     PreproObsDataGPS = PreproObsData[PreproObsData[PreproIdx["PRN"]].str.startswith("G")]
-
-    # Raw data
-    # PreproObsDataGalileoRaw = PreproObsDataGalileo[PreproObsData[PreproIdx["STATUS"]] == 0]
-    # PreproObsDataGPSRaw = PreproObsDataGPS[PreproObsDataGPS[PreproIdx["STATUS"]] == 0]
-    # PreproObsDataRaw = PreproObsData[PreproObsData[PreproIdx["STATUS"]] == 0]
 
     # Smoothed data
     PreproObsDataGalileoSmoothed = PreproObsDataGalileo[PreproObsData[PreproIdx["STATUS"]] == 1]
