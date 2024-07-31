@@ -1,6 +1,8 @@
 OBS/
 NAV/
 
-__pycache__
+SRC/__pycache__
+SRC/PREPRO/__pycache__
+SRC/COMMON/__pycache__
 
 *.ipynb
