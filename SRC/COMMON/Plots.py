@@ -127,19 +127,12 @@ def prepareColorBar(PlotConf, ax, Values, scatter = None):
         num_bins = PlotConf["ColorBarBins"]
         bounds = np.linspace(Min, Max, num_bins + 1)
         normalize = mpl.colors.BoundaryNorm(bounds, cmap.N)
-        # Calculate midpoints for the bins
-        midpoints = bounds/num_bins
-        
-        # Include Min and Max in the tick labels
-        tick_positions = np.insert(midpoints, 0, Min)
-        tick_positions = np.append(tick_positions, Max)
-
         cbar = mpl.colorbar.ColorbarBase(color_ax, 
                                          cmap=cmap, 
                                          norm=normalize,
                                          label=PlotConf["ColorBarLabel"],
                                          boundaries=bounds,
-                                         ticks=midpoints)
+                                         ticks=bounds)
     else:
         # Handle the case where ColorBarBins is not provided or other KeyError
         normalize = mpl.cm.colors.Normalize(vmin=Min, vmax=Max)
