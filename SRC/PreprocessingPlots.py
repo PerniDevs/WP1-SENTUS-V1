@@ -583,7 +583,7 @@ def plotRejectionFlags(PreproObsFile, PreproObsData):
         
         "Annotations": {0: PreproObsDataGalileo[PreproIdx["PRN"]]},
 
-        "xData": {0: unique(PreproObsDataGalileo[PreproIdx["SOD"]]) / GnssConstants.S_IN_H},
+        "xData": {0: PreproObsDataGalileo[PreproIdx["SOD"]] / GnssConstants.S_IN_H},
         "yData": {0: PreproObsDataGalileo[PreproIdx["REJECT"]]},
         "zData" : {0: [int(convert_satlabel_to_prn(prn)) for prn in PreproObsDataGalileo[PreproIdx["PRN"]]]}, 
 

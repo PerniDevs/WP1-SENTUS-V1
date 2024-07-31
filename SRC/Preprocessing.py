@@ -83,8 +83,9 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
     CodesObs = ObsInfo[0]
     PhaseObs = ObsInfo[1]
 
-    # Initialize output
-    PreproObsInfo = OrderedDict({})
+    # Stablish a general condition for CodeObs y PhaseObs
+    # 0 for PhaseObs and 1 for CodeObs
+    condition = 0
 
     # CHALLENGE:
     # if check Cycle Slips activated
@@ -107,7 +108,7 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
             if Sod - PrevPreproObsInfo[SatLabel]["GF_Epoch_Prev"][1] < Conf["MAX_DATA_GAP"][1]:
 
                 # Cycle slips detection
-                if PrevPreproObsInfo[SatLabel]["CycleSlipBuffIdx"] == Conf["CYCLE_SLIPS"][3]:
+                if PrevPreproObsInfo[SatLabel]["CycleSlipBuffIdx"] == Conf["CYCLE_SLIPS"][CSNPOINTS]:
                     
                     # Fit a polynomial using previous GF measurements to compare the predicted value
                     # with the observed one
@@ -122,36 +123,54 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
                     residual = abs(PrevPreproObsInfo[SatLabel]["GF_L_Prev"][0] - targetPred)
 
                     # Compute CS flag
-                    PrevPreproObsInfo[SatLabel]["CycleSlipDetectFlag"] = 1 if residual > Conf["CYCLE_SLIPS"][1] else 0
+                    PrevPreproObsInfo[SatLabel]["CycleSlipDetectFlag"] = 1 if residual > Conf["CYCLE_SLIPS"][TH] else 0
 
-                    # Shift the buffer for CS flags and store last value as a detected flag
-                    # TODO: only set the buffer to 1 after 2nd epoch of the cycle slip, to do
-                    PrevPreproObsInfo[SatLabel]["CycleSlipFlags"][1:] = PrevPreproObsInfo[SatLabel]["CycleSlipFlags"][:-1]
-                    PrevPreproObsInfo[SatLabel]["CycleSlipFlags"][0] = PrevPreproObsInfo[SatLabel]["CycleSlipDetectFlag"] 
+                    # Update CS flag buffer
+                    if PrevPreproObsInfo[SatLabel]["CycleSlipDetectFlag"] == 1:
+                        # Shift the buffer for CS flags and store last value as a detected flag
+                        PrevPreproObsInfo[SatLabel]["CycleSlipFlags"][PrevPreproObsInfo[SatLabel]["CycleSlipFlagIdx"]] = 1
+                        PrevPreproObsInfo[SatLabel]["CycleSlipFlagIdx"] += 1 % int(Conf["CYCLE_SLIPS"][CSNEPOCHS])
 
-                    # If CS is full then reject the measurement
-                    if sum(PrevPreproObsInfo[SatLabel]["CycleSlipFlags"]) == Conf["CYCLE_SLIPS"][2]:
-                        PreproObsInfo = rejectMeasurement(PreproObsInfo, "CYCLE_SLIPS")
+                    # If CS is full then flag the measurement
+                    if sum(PrevPreproObsInfo[SatLabel]["CycleSlipFlags"]) == Conf["CYCLE_SLIPS"][CSNEPOCHS]:
                         
-                        # Reset PrevpreproObsInfo dict to default values
-                        PrevPreproObsInfo[SatLabel]["CycleSlipBuffIdx"] = 0
-                        PrevPreproObsInfo[SatLabel]["CycleSlipFlagIdx"] = 0
-                        PrevPreproObsInfo[SatLabel]["GF_L_Prev"] = [0.0] * int(Conf["CYCLE_SLIPS"][CSNPOINTS])
-                        PrevPreproObsInfo[SatLabel]["GF_Epoch_Prev"] = [0.0] * int(Conf["CYCLE_SLIPS"][CSNPOINTS])
-                        PrevPreproObsInfo[SatLabel]["CycleSlipFlags"] = [0.0] * int(Conf["CYCLE_SLIPS"][CSNEPOCHS])
-                        PrevPreproObsInfo[SatLabel]["CycleSlipDetectFlag"] = 0
+                        # Flag the measurement
+                        PrevPreproObsInfo[SatLabel]["CycleSlipDetectFlag"] = 1
 
-            # Shift the buffer for GF and store last value
-            PrevPreproObsInfo[SatLabel]["GF_L_Prev"][1:] = PrevPreproObsInfo[SatLabel]["GF_L_Prev"][:-1]
-            PrevPreproObsInfo[SatLabel]["GF_L_Prev"][0] = GF
+                        # Reset PrevpreproObsInfo dict to default values and Buffers
+                        PrevPreproObsInfo[SatLabel] = resetPrevPreproObsInfo(Conf, PhaseObs, PrevPreproObsInfo, SatLabel, condition)
+                        PrevPreproObsInfo[SatLabel]["GF_Epoch_Prev"][0] = Sod
 
-            # Shift the buffer for SoD and store last value
-            PrevPreproObsInfo[SatLabel]["GF_Epoch_Prev"][1:] = PrevPreproObsInfo[SatLabel]["GF_Epoch_Prev"][:-1]
-            PrevPreproObsInfo[SatLabel]["GF_Epoch_Prev"][0] = Sod
+                        # If threshold was exceeded, don't update the buffer with the new observation
+                    else:
+                        # Update Buffers
+                        # Shift the buffer for GF and store last value
+                        PrevPreproObsInfo[SatLabel]["GF_L_Prev"][1:] = PrevPreproObsInfo[SatLabel]["GF_L_Prev"][:-1]
+                        PrevPreproObsInfo[SatLabel]["GF_L_Prev"][0] = GF
 
-            PrevPreproObsInfo[SatLabel]["CycleSlipBuffIdx"] = PrevPreproObsInfo[SatLabel]["CycleSlipBuffIdx"] + 1
+                        # Shift the buffer for SoD and store last value
+                        PrevPreproObsInfo[SatLabel]["GF_Epoch_Prev"][1:] = PrevPreproObsInfo[SatLabel]["GF_Epoch_Prev"][:-1]
+                        PrevPreproObsInfo[SatLabel]["GF_Epoch_Prev"][0] = Sod
+                else:
+                    # If buffer is not full, fill the buffer with new information
+                    PrevPreproObsInfo[SatLabel]["GF_L_Prev"][PrevPreproObsInfo[SatLabel]["CycleSlipBuffIdx"]] = GF
+                    PrevPreproObsInfo[SatLabel]["GF_Epoch_Prev"][PrevPreproObsInfo[SatLabel]["CycleSlipBuffIdx"]] = Sod
+                    PrevPreproObsInfo[SatLabel]["CycleSlipBuffIdx"] += 1
+            else:
+                # Reset the buffer and store the epoch
+                PrevPreproObsInfo[SatLabel] = resetPrevPreproObsInfo(Conf, PhaseObs, PrevPreproObsInfo, SatLabel, condition)
+                PrevPreproObsInfo[SatLabel]["GF_Epoch_Prev"][PrevPreproObsInfo[SatLabel]["CycleSlipBuffIdx"]] = Sod
+                PrevPreproObsInfo[SatLabel]["CycleSlipBuffIdx"] += 1
+
         # end of for iObs, SatPhaseObs in enumerate(PhaseObs):
     # End of if (Conf["CYCLE_SLIPS"][FLAG] == 1)
+
+
+    # Initialize output
+    PreproObsInfo = OrderedDict({})
+    
+    # Once the loop for PhaseObs is finished update the condition to one so the correct rejection is applied
+    condition = 1
 
     # Loop over Code measurements
     for iObs, SatCodesObs in enumerate(CodesObs):
@@ -296,13 +315,13 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
         #--------------------------------------------------------------------
         # TODO: Periodo de no visibilidad si DeltaT es mayor a 1000 rejection cause sigue igual, o viceversa
         # verificar con la elevacion con las epocas anteriores  
-        if PreproObs["Sod"] - PrevPreproObsInfo[SatLabel]["PrevEpoch"] > Conf["MAX_DATA_GAP"][1]:
+        if (PreproObs["Sod"] - PrevPreproObsInfo[SatLabel]["PrevEpoch"]) > Conf["MAX_DATA_GAP"][1]:
             if Conf["MAX_DATA_GAP"][0] == 1 and (PreproObs["Sod"] - PrevPreproObsInfo[SatLabel]["PrevEpoch"]) < 1000:
                 PreproObs = rejectMeasurement(PreproObs, "MAX_DATA_GAP")
                 PrevPreproObsInfo[SatLabel]["PrevElev"][0] = PrevPreproObsInfo[SatLabel]["PrevElev"][1]
                 PrevPreproObsInfo[SatLabel]["PrevElev"][1] = PreproObs["Elevation"]
-            PrevPreproObsInfo[SatLabel] = resetPrevPreproObsInfo(Conf, PreproObs)
-        
+            PrevPreproObsInfo[SatLabel] = resetPrevPreproObsInfo(Conf, PreproObs, PrevPreproObsInfo, SatLabel, condition)
+            
         # if PreproObs["Sod"] - PrevPreproObsInfo[SatLabel]["PrevEpoch"] > Conf["MAX_DATA_GAP"][1]:
         #     if Conf["MAX_DATA_GAP"][0] == 1 and (PrevPreproObsInfo[SatLabel]["PrevElev"][0] != Const.NAN) and (PrevPreproObsInfo[SatLabel]["PrevElev"][1] != Const.NAN):
         #         PreproObs = rejectMeasurement(PreproObs, "MAX_DATA_GAP")
@@ -447,6 +466,12 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
             # End if PreproObs["RangeRateStepL1"] > Conf["MAX_CODE_RATE_STEP"][1] || PreproObs["RangeRateStepL2"] > Conf["MAX_CODE_RATE_STEP"][1]
         # End if Conf["MAX_CODE_RATE_STEP"][0] == 1
 
+        # Reject Measurement for Cycle Slips if activated
+        #--------------------------------------------------------------------
+        # Compute Code Rate Step in m/s2 as the second derivative of Raw Codes
+        if  PrevPreproObsInfo[SatLabel]["CycleSlipDetectFlag"] == 1:
+            PreproObs = rejectMeasurement(PreproObs, "CYCLE_SLIPS")
+            PrevPreproObsInfo[SatLabel]["CycleSlipDetectFlag"] = 0
 
         # Update Smoothing status if it is superior to 100s
         # print(PrevPreproObsInfo[SatLabel]["Ksmooth"])
