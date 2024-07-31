@@ -123,15 +123,24 @@ def prepareColorBar(PlotConf, ax, Values, scatter = None):
     color_ax = divider.append_axes("right", size="3%", pad="2%")
     cmap = mpl.cm.get_cmap(PlotConf["ColorBar"])
 
-    try: 
+    if "ColorBarBins" in PlotConf: 
         num_bins = PlotConf["ColorBarBins"]
         bounds = np.linspace(Min, Max, num_bins + 1)
         normalize = mpl.colors.BoundaryNorm(bounds, cmap.N)
-        cbar = mpl.colorbar.ColorbarBase(color_ax, cmap=cmap, norm=normalize,
+        # Calculate midpoints for the bins
+        midpoints = bounds/num_bins
+        
+        # Include Min and Max in the tick labels
+        tick_positions = np.insert(midpoints, 0, Min)
+        tick_positions = np.append(tick_positions, Max)
+
+        cbar = mpl.colorbar.ColorbarBase(color_ax, 
+                                         cmap=cmap, 
+                                         norm=normalize,
                                          label=PlotConf["ColorBarLabel"],
                                          boundaries=bounds,
-                                         ticks=np.linspace(Min, Max, num_bins))
-    except:
+                                         ticks=midpoints)
+    else:
         # Handle the case where ColorBarBins is not provided or other KeyError
         normalize = mpl.cm.colors.Normalize(vmin=Min, vmax=Max)
     
@@ -140,7 +149,11 @@ def prepareColorBar(PlotConf, ax, Values, scatter = None):
                                      label=PlotConf["ColorBarLabel"])
     
     try:
-    #  PlotConf["ColorBarSetTicks"]:
+        # if "ColorBarBins" in PlotConf:
+        #     # Adjust tick labels to display the bin values
+        #     tick_labels = [f'{tick:f}' for tick in tick_positions]
+        #     cbar.set_ticklabels(tick_labels)
+        # else:
         cbar.set_ticks(PlotConf["ColorBarSetTicks"])
         cbar.set_ticklabels(PlotConf["ColorBarSetTicks"])
     except:
@@ -263,11 +276,18 @@ def generateLinesPlot(PlotConf):
 
                         # Alternating Offsets
                         if i %2 ==0:
-                            offset = 5
+                            offset = 10
                         else:
                             offset = -5
 
-                        ax.annotate(text, (x_data[i], y_data[i]), fontsize=5, ha='center', va="top",  color=text_color, xytext=(0, offset), textcoords='offset points')
+                        ax.annotate(text, 
+                                    (x_data[i], y_data[i]), 
+                                    fontsize=8, 
+                                    ha='center', 
+                                    va="top",  
+                                    color=text_color, 
+                                    xytext=(0, offset), 
+                                    textcoords='offset points')
                 else:
                     pass
 

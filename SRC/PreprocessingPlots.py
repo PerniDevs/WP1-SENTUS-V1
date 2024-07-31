@@ -571,14 +571,14 @@ def plotRejectionFlags(PreproObsFile, PreproObsData):
         "LineWidth" : 0,
         "Grid" : 1,
 
-        "ColorBar" : "gist_ncar",
+        "ColorBar" : "nipy_spectral",
         "ColorBarLabel" : "Galileo PRN",
         "ColorBarMin" : min(gal_prn),
         "ColorBarMax" : max(gal_prn),
         "ColorBarSetTicks": sorted(gal_prn),
-        "ColoBarBins": len(gal_prn), 
+        "ColorBarBins": len(gal_prn), 
 
-        "s" : 100, 
+        "s" : 50, 
         "Label" : 0,
         
         "Annotations": {0: PreproObsDataGalileo[PreproIdx["PRN"]]},
@@ -609,14 +609,14 @@ def plotRejectionFlags(PreproObsFile, PreproObsData):
         "LineWidth" : 0,
         "Grid" : 1,
 
-        "ColorBar" : "gist_ncar",
+        "ColorBar" : "nipy_spectral",
         "ColorBarLabel" : "GPS PRN",
         "ColorBarMin" : min(gps_prn),
         "ColorBarMax" : max(gps_prn),
         "ColorBarSetTicks": sorted(gps_prn),
-        "ColoBarBins": len(gps_prn), 
+        "ColorBarBins": len(gps_prn), 
 
-        "s" : 100, 
+        "s" : 50, 
         "Label" : 0,
         
         "Annotations": {0: PreproObsDataGPS[PreproIdx["PRN"]]},
