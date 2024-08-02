@@ -468,7 +468,6 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
 
         # Reject Measurement for Cycle Slips if activated
         #--------------------------------------------------------------------
-        # Compute Code Rate Step in m/s2 as the second derivative of Raw Codes
         if  PrevPreproObsInfo[SatLabel]["CycleSlipDetectFlag"] == 1:
             PreproObs = rejectMeasurement(PreproObs, "CYCLE_SLIPS")
             PrevPreproObsInfo[SatLabel]["CycleSlipDetectFlag"] = 0
