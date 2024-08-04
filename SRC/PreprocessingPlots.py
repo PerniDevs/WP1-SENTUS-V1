@@ -369,7 +369,7 @@ def plotCN0(PreproObsFile, PreproObsData, PlotTitle, PlotLabel):
             "Type": "Lines",
             "FigSize" : (8.4, 6.6),
 
-            "yLabel" : "GAL CN0_F1 [m/s]",
+            "yLabel" : "GAL CN0_F1 [dB-Hz]",
 
             "xTicks": range(round(PreproObsDataGalileo[PreproIdx["SOD"]].min() / GnssConstants.S_IN_H), round(PreproObsDataGalileo[PreproIdx["SOD"]].max() / GnssConstants.S_IN_H) + 1),
             "xLim" : [round(PreproObsDataGalileo[PreproIdx["SOD"]].min() / GnssConstants.S_IN_H), round(PreproObsDataGalileo[PreproIdx["SOD"]].max() / GnssConstants.S_IN_H)],
@@ -410,7 +410,7 @@ def plotCN0(PreproObsFile, PreproObsData, PlotTitle, PlotLabel):
             "Type": "Lines",
             "FigSize" : (8.4, 6.6),
 
-            "yLabel" : "GPS CN0_F1 [m/s]",
+            "yLabel" : "GPS CN0_F1 [dB-Hz]",
 
             "xTicks": range(round(PreproObsDataGPS[PreproIdx["SOD"]].min() / GnssConstants.S_IN_H), round(PreproObsDataGPS[PreproIdx["SOD"]].max() / GnssConstants.S_IN_H) + 1),
             "xLim" : [round(PreproObsDataGPS[PreproIdx["SOD"]].min() / GnssConstants.S_IN_H), round(PreproObsDataGPS[PreproIdx["SOD"]].max() / GnssConstants.S_IN_H)],
@@ -460,7 +460,7 @@ def plotCN0(PreproObsFile, PreproObsData, PlotTitle, PlotLabel):
             "Type": "Lines",
             "FigSize" : (8.4, 6.6),
 
-            "yLabel" : "GAL CN0_F2 [m/s]",
+            "yLabel" : "GAL CN0_F2 [dB-Hz]",
 
             "xTicks": range(round(PreproObsDataGalileo[PreproIdx["SOD"]].min() / GnssConstants.S_IN_H), round(PreproObsDataGalileo[PreproIdx["SOD"]].max() / GnssConstants.S_IN_H) + 1),
             "xLim" : [round(PreproObsDataGalileo[PreproIdx["SOD"]].min() / GnssConstants.S_IN_H), round(PreproObsDataGalileo[PreproIdx["SOD"]].max() / GnssConstants.S_IN_H)],
@@ -500,7 +500,7 @@ def plotCN0(PreproObsFile, PreproObsData, PlotTitle, PlotLabel):
             "Type": "Lines",
             "FigSize" : (8.4, 6.6),
 
-            "yLabel" : "GPS CN0_F2 [m/s]",
+            "yLabel" : "GPS CN0_F2 [dB-Hz]",
 
             "xTicks": range(round(PreproObsDataGPS[PreproIdx["SOD"]].min() / GnssConstants.S_IN_H), round(PreproObsDataGPS[PreproIdx["SOD"]].max() / GnssConstants.S_IN_H) + 1),
             "xLim" : [round(PreproObsDataGPS[PreproIdx["SOD"]].min() / GnssConstants.S_IN_H), round(PreproObsDataGPS[PreproIdx["SOD"]].max() / GnssConstants.S_IN_H)],
