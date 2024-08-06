@@ -120,7 +120,7 @@ def runPreprocessing(Conf, ObsInfo, PrevPreproObsInfo):
                     targetPred = np.polynomial.polynomial.polyval(Sod, polynom)
 
                     # Calculate the residual between the predicted and observed
-                    residual = abs(PrevPreproObsInfo[SatLabel]["GF_L_Prev"][0] - targetPred)
+                    residual = abs(GF - targetPred)
 
                     # Compute CS flag
                     PrevPreproObsInfo[SatLabel]["CycleSlipDetectFlag"] = 1 if residual > Conf["CYCLE_SLIPS"][TH] else 0

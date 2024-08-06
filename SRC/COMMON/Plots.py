@@ -10,6 +10,7 @@ ProjLib = os.path.join(os.path.join(CondaDir, 'share'), 'proj')
 os.environ["PROJ_LIB"] = ProjLib
 from mpl_toolkits.basemap import Basemap
 import matplotlib.ticker as ticker
+from GnssConstants import S_IN_H
 
 
 import warnings
@@ -263,7 +264,7 @@ def generateLinesPlot(PlotConf):
                     x_data = np.array(PlotConf["xData"][Label])
                     y_data = np.array(PlotConf["yData"][Label])
                     annotations = np.array(PlotConf["Annotations"][Label])
-
+                    prev_x_data_point = 0
                     for i, text in enumerate(annotations):
                         text_color = colors[i][:3]
 
@@ -272,15 +273,19 @@ def generateLinesPlot(PlotConf):
                             offset = 10
                         else:
                             offset = -5
-
-                        ax.annotate(text, 
-                                    (x_data[i], y_data[i]), 
-                                    fontsize=8, 
-                                    ha='center', 
-                                    va="top",  
-                                    color=text_color, 
-                                    xytext=(0, offset), 
-                                    textcoords='offset points')
+                        
+                        if x_data[i] > prev_x_data_point +700 / S_IN_H:
+                            ax.annotate(text, 
+                                            (x_data[i], y_data[i]), 
+                                            fontsize=8, 
+                                            ha='center', 
+                                            va="top",  
+                                            color=text_color, 
+                                            xytext=(0, offset), 
+                                            textcoords='offset points')
+                            
+                            prev_x_data_point = x_data[i]
+                        
                 else:
                     pass
 
