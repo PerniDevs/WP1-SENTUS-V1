@@ -274,17 +274,19 @@ def generateLinesPlot(PlotConf):
                         else:
                             offset = -5
                         
-                        if x_data[i] > prev_x_data_point +700 / S_IN_H:
-                            ax.annotate(text, 
-                                            (x_data[i], y_data[i]), 
-                                            fontsize=8, 
-                                            ha='center', 
-                                            va="top",  
-                                            color=text_color, 
-                                            xytext=(0, offset), 
-                                            textcoords='offset points')
+                        # if x_data[i] > prev_x_data_point +700 / S_IN_H:
+                        ax.annotate(text, 
+                                        (x_data[i], y_data[i]), 
+                                        fontsize=8, 
+                                        ha='center', 
+                                        va="top",  
+                                        color=text_color, 
+                                        xytext=(0, offset), 
+                                        textcoords='offset points',
+                                        # bbox=dict(boxstyle='round,pad=0.3', edgecolor=(0, 0, 0, 0), facecolor='white')
+                                        )
                             
-                            prev_x_data_point = x_data[i]
+                            # prev_x_data_point = x_data[i]
                         
                 else:
                     pass

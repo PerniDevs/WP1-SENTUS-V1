@@ -552,6 +552,14 @@ def plotRejectionFlags(PreproObsFile, PreproObsData):
     PreproObsDataGalileo = PreproObsData[(PreproObsData[PreproIdx["PRN"]].str.startswith("E") & (PreproObsData[PreproIdx["REJECT"]] != 0))]
     PreproObsDataGPS =     PreproObsData[(PreproObsData[PreproIdx["PRN"]].str.startswith("G") & (PreproObsData[PreproIdx["REJECT"]] != 0))]
 
+    # Aggregate data by 1000s intervals
+    interval = 1000  # seconds
+    PreproObsDataGalileo['Interval'] = (PreproObsDataGalileo[PreproIdx["SOD"]] // interval) * interval
+    aggregated_dataGalileo = PreproObsDataGalileo.groupby('Interval').apply(lambda x: x.drop_duplicates(subset=[PreproIdx["REJECT"]]))
+
+    PreproObsDataGPS['Interval'] = (PreproObsDataGPS[PreproIdx["SOD"]] // interval) * interval
+    aggregated_dataGPS = PreproObsDataGPS.groupby('Interval').apply(lambda x: x.drop_duplicates(subset=[PreproIdx["REJECT"]]))
+
     PlotConfGalileo = {
         "Type": "Lines",
         "FigSize" : (10.4, 6.6),
@@ -578,14 +586,14 @@ def plotRejectionFlags(PreproObsFile, PreproObsData):
         "ColorBarSetTicks": sorted(gal_prn),
         "ColorBarBins": len(gal_prn), 
 
-        "s" : 50, 
+        "s" : 20, 
         "Label" : 0,
         
-        "Annotations": {0: PreproObsDataGalileo[PreproIdx["PRN"]]},
+        "Annotations": {0: aggregated_dataGalileo[PreproIdx["PRN"]]},
 
-        "xData": {0: PreproObsDataGalileo[PreproIdx["SOD"]] / GnssConstants.S_IN_H},
-        "yData": {0: PreproObsDataGalileo[PreproIdx["REJECT"]]},
-        "zData" : {0: [int(convert_satlabel_to_prn(prn)) for prn in PreproObsDataGalileo[PreproIdx["PRN"]]]}, 
+        "xData": {0: aggregated_dataGalileo[PreproIdx["SOD"]] / GnssConstants.S_IN_H},
+        "yData": {0: aggregated_dataGalileo[PreproIdx["REJECT"]]},
+        "zData" : {0: [int(convert_satlabel_to_prn(prn)) for prn in aggregated_dataGalileo[PreproIdx["PRN"]]]}, 
 
         "Path": sys.argv[1] + '/OUT/PPVE/SAT/' + 'GAL_REJECTION_FLAGS_s6an_D011Y24.png',
     }
@@ -616,14 +624,14 @@ def plotRejectionFlags(PreproObsFile, PreproObsData):
         "ColorBarSetTicks": sorted(gps_prn),
         "ColorBarBins": len(gps_prn), 
 
-        "s" : 50, 
+        "s" : 20, 
         "Label" : 0,
         
-        "Annotations": {0: PreproObsDataGPS[PreproIdx["PRN"]]},
+        "Annotations": {0: aggregated_dataGPS[PreproIdx["PRN"]]},
 
-        "xData": {0: PreproObsDataGPS[PreproIdx["SOD"]] / GnssConstants.S_IN_H},
-        "yData": {0: PreproObsDataGPS[PreproIdx["REJECT"]]},
-        "zData" : {0: [int(convert_satlabel_to_prn(prn)) for prn in PreproObsDataGPS[PreproIdx["PRN"]]]}, 
+        "xData": {0: aggregated_dataGPS[PreproIdx["SOD"]] / GnssConstants.S_IN_H},
+        "yData": {0: aggregated_dataGPS[PreproIdx["REJECT"]]},
+        "zData" : {0: [int(convert_satlabel_to_prn(prn)) for prn in aggregated_dataGPS[PreproIdx["PRN"]]]}, 
 
         "Path": sys.argv[1] + '/OUT/PPVE/SAT/' + 'GPS_REJECTION_FLAGS_s6an_D011Y24.png',
     }
